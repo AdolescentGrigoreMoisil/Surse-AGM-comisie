@@ -1,0 +1,152 @@
+// Nitu Mihai
+// Universitatea din Bucuresti
+ 
+#include <fstream>
+#include <iostream>
+#include <cmath>
+ 
+#define inf 1000000010
+#define maxn 100010
+ 
+using namespace std;
+ 
+ifstream fin("constant.in");
+ofstream fout("constant.out");
+ifstream f("eu.in");
+ifstream g("marcus.in");
+ 
+int val[maxn], A[maxn], D[10][maxn], LVL[maxn], E[2*maxn], P[2*maxn], N[2*maxn], F[10][2*maxn], rmq[18][2*maxn], FF[10][maxn];
+int p, t, nodes, n, q, test;
+char s[maxn];
+ 
+void dfs(int x, int f)
+{
+    val[x] = s[p]-'0';
+ 
+    ++t;
+    E[t] = x;
+    A[x] = t;
+    P[p] = t;
+    N[t] = nodes;
+    for (int i = 1; i <= 9; ++i)
+        F[i][t] = F[i][t-1];
+    F[val[x]][t]++;
+ 
+    LVL[x] = LVL[f]+1;
+    for (int i = 1; i <= 9; ++i)
+        D[i][x] = D[i][f];
+    D[val[x]][x] = LVL[x];
+    for (int i = 1; i <= 9; ++i)
+        FF[i][x] = FF[i][f];
+    FF[val[x]][x]++;
+ 
+    ++p;
+ 
+    while (1)
+    {
+        while (s[p] == '*')
+        {
+            P[p] = t;
+            ++p;
+        }
+ 
+        if ('0' <= s[p] && s[p] <= '9')
+        {
+            ++nodes;
+            dfs(nodes, x);
+ 
+            ++t;
+            E[t] = x;
+            P[p] = t;
+            N[t] = nodes;
+ 
+            for (int i = 1; i <= 9; ++i)
+                F[i][t] = F[i][t-1];
+            ++p;
+        }
+        else
+        {
+            return;
+        }
+    }
+}
+ 
+void RMQ()
+{
+    for (int i = 1; i <= t; ++i)
+        rmq[0][i] = E[i];
+ 
+    int i;
+    for (i = 1; (1<<i) <= t; ++i)
+    {
+        for (int j = 1; j+(1<<i)-1 <= t; ++j)
+        {
+            if (LVL[rmq[i-1][j]] < LVL[rmq[i-1][j+(1<<(i-1))]])
+                rmq[i][j] = rmq[i-1][j];
+            else rmq[i][j] = rmq[i-1][j+(1<<(i-1))];
+        }
+    }
+}
+ 
+int LCA (int a, int b)
+{
+    a = A[a];
+    b = A[b];
+    if (a > b)
+        swap(a,b);
+    int l = log2(b-a+1);
+ 
+    if (LVL[rmq[l][a]] < LVL[rmq[l][b-(1<<l)+1]])
+        return rmq[l][a];
+    else return rmq[l][b-(1<<l)+1];
+}
+ 
+void reset()
+{
+    p = 0;
+    nodes = 1;
+    t = 0;
+}
+ 
+void solve()
+{
+    reset();
+    fin >> n >> q >> s;
+ 
+    dfs(1,0);
+    RMQ();
+ 
+    for (int i = 1; i <= q; ++i)
+    {
+        int a,b;
+        fin >> a >> b;
+        --b;
+ 
+        a = P[a];
+        b = P[b];
+ 
+        int lca = LCA(E[a],E[b]);
+        int ans = inf;
+ 
+        for (int j = 1; j <= 9; ++j)
+        {
+            if (D[j][lca] == 0)
+                continue;
+            int cost = LVL[lca] - D[j][lca];
+            cost += (N[b] - N[a]) - (F[j][b] - F[j][a]) + (LVL[E[a]] - LVL[lca]) - (FF[j][E[a]] - FF[j][lca]);
+            ans = min(ans, cost);
+        }
+        fout << ans << "\n";
+    }
+    fout << "\n";
+}
+ 
+int main()
+{
+    fin >> test;
+ 
+    for (;test; --test)
+    {
+        solve();
+    }
+}
