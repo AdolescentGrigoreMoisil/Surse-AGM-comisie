@@ -1,1 +1,114 @@
+/*
+    George Marcus
+    O(NlogN + MlogN)
+*/
 
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define MAXN 100050
+#define INF 2000000000
+
+int T, N, M, a, b, c;
+vector<pair<int, int> > A[MAXN];
+vector<pair<int, int> > B[MAXN];
+int D[MAXN];
+int from[MAXN];
+set<pair<int, int> > S;
+vector<int> *L[MAXN];
+int bus[MAXN];
+
+void dfs(int node, int prv) {
+    bus[node] = node;
+    L[node]->push_back(node);
+    for (auto e : B[node]) {
+        if (e.first != prv) {
+            dfs(e.first, node);
+
+            printf("Drive %d %d %d\n", bus[e.first] + 1, e.first + 1, node + 1);
+
+            int a = node;
+            int b = e.first;
+            if (L[a]->size() < L[b]->size()) {
+                swap(L[a], L[b]);
+                swap(bus[a], bus[b]);
+            }
+            for (auto it : *L[b]) {
+                L[a]->push_back(it);
+                printf("Move %d %d %d\n", it + 1, bus[b] + 1, bus[a] + 1);
+            }
+            L[b]->clear();
+        }
+    }
+}
+
+void solve() {
+    S.clear();
+    for (int i = 0; i < N; i++) {
+        D[i] = INF;
+    }
+    from[0] = -1;
+    D[0] = 0;
+    S.insert({0, 0});
+
+    int total = 0;
+    while (!S.empty()) {
+        auto top = *S.begin();
+        S.erase(S.begin());
+        int node = top.second;
+        int dist = top.first;
+        if (D[node] != dist) {
+            continue;
+        }
+        total += dist;
+        if (from[node] != -1) {
+            B[from[node]].push_back({node, dist});
+            B[node].push_back({from[node], dist});
+        }
+        D[node] = -INF;
+        for (auto e : A[node]) {
+            if (e.second < D[e.first]) {
+                D[e.first] = e.second;
+                from[e.first] = node;
+                S.insert({D[e.first], e.first});
+            }
+        }
+    }
+
+    printf("%d\n", total);
+    dfs(0, -1);
+    printf("Gata\n");
+}
+
+int main() {
+    freopen("autobuze3.in", "r", stdin);
+    freopen("autobuze3.out","w", stdout);
+
+    for (int i = 0; i < MAXN; i++) {
+        L[i] = new vector<int>();
+    }
+
+    scanf("%d", &T);
+    while (T--) {
+        scanf("%d %d", &N, &M);
+        for (int i = 0; i < M; i++) {
+            scanf("%d %d %d", &a, &b, &c);
+            a--; b--;
+            A[a].push_back({b, c});
+            A[b].push_back({a, c});
+        }
+        solve();
+        for (int i = 0; i < N; i++) {
+            A[i].clear();
+            B[i].clear();
+            L[i]->clear();
+        }
+    }
+
+    for (int i = 0; i < MAXN; i++) {
+        delete L[i];
+    }
+
+    return 0;
+}
