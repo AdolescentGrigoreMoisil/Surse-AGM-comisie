@@ -1,0 +1,179 @@
+/*
+    George Marcus
+*/
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define INF 1100000000
+#define MAXN 35
+ 
+int T, N, R, B, a, b, c;
+string S;
+int dp[2][MAXN][MAXN][MAXN][MAXN];
+int C[MAXN][MAXN];
+int stCost[MAXN][MAXN];
+int drCost[MAXN][MAXN];
+int stNext[MAXN][26];
+int drNext[MAXN][26];
+ 
+inline void upd(int &a, int b) {
+    a = min(a, b);
+}
+ 
+int main() {
+    freopen("palsubsecv.in", "r", stdin);
+    freopen("palsubsecv.out","w", stdout);
+    cin.sync_with_stdio(false);
+     
+    cin >> T;
+    while (T--) {
+        cin >> N >> R >> B;
+        cin >> S;
+        memset(C, 0, sizeof(C));
+        for (int i = 0; i < R; i++) {
+            cin >> a >> b >> c;
+            a--; b--;
+            C[a][b] += c;
+        }
+         
+        for (int i = 0; i < N; i++) {
+            for (int j = i; j < N; j++) {
+                stCost[i][j] = stCost[i][j - 1] + C[i][j];
+            }
+        }
+        for (int j = 0; j < N; j++) {
+            for (int i = j; i >= 0; i--) {
+                drCost[i][j] = drCost[i + 1][j] + C[i][j];
+            }
+        }
+         
+        for (int c = 0; c < 26; c++) {
+            stNext[0][c] = -1;
+        }
+        for (int i = 1; i < N; i++) {
+            for (int c = 0; c < 26; c++) {
+                stNext[i][c] = stNext[i - 1][c];
+            }
+            stNext[i][ S[i - 1] - 'a' ] = i - 1;
+        }
+         
+        for (int c = 0; c < 26; c++) {
+            drNext[N - 1][c] = -1;
+        }
+        for (int i = N - 2; i >= 0; i--) {
+            for (int c = 0; c < 26; c++) {
+                drNext[i][c] = drNext[i + 1][c];
+            }
+            drNext[i][ S[i + 1] - 'a' ] = i + 1;
+        }
+         
+        for (int i = 0; i < N; i++) {
+            for (int leni = 0; i + leni - 1 < N; leni++) {
+                for (int j = i + 1; j < N; j++) {
+                    for (int lenj = 0; j - lenj + 1 >= 0; lenj++) {
+                        dp[0][i][leni][j][lenj] = INF;
+                    }
+                }
+            }
+        }
+         
+        for (int i = 0; i < N; i++) {
+            for (int j = i + 1; j < N; j++) {
+                if (S[i] == S[j]) {
+                    int c = (i + 1 == j) ? 2 : 1;
+                    int cost = C[i][i] + C[j][j];
+                    if (c == 2) {
+                        cost += stCost[i][j] - C[i][i];
+                    }
+                    dp[0][i][c][j][c] = cost;
+                }
+            }
+        }
+         
+        int ans = 0;
+        int line = 1;
+        for (int slen = 2; slen <= N; slen += 2) {
+            for (int i = 0; i < N; i++) {
+                for (int leni = 0; i + leni - 1 < N; leni++) {
+                    for (int j = i + 1; j < N; j++) {
+                        for (int lenj = 0; j - lenj + 1 >= 0; lenj++) {
+                            dp[line][i][leni][j][lenj] = INF;
+                        }
+                    }
+                }
+            }
+            for (int len = slen; len <= N; len++) {
+                for (int i = 0; i + len - 1 < N; i++) {
+                    for (int leni = 0; i + leni - 1 < N; leni++) {
+                        int j = i + len - 1;
+                        for (int lenj = 0; j - lenj + 1 >= 0; lenj++) {
+                            if (dp[1 - line][i][leni][j][lenj] < INF) {
+                                int prevCost = dp[1 - line][i][leni][j][lenj];
+                                if (prevCost <= B) {
+                                    ans = max(ans, slen);
+                                }
+                                 
+                                // skip left
+                                if (i > 0) {
+                                    upd(dp[1 - line][i - 1][0][j][lenj], prevCost);
+                                }
+                                 
+                                // skip right
+                                if (j + 1 < N) {
+                                    upd(dp[1 - line][i][leni][j + 1][0], prevCost);
+                                }
+                                 
+                                // take left
+                                if (i > 0) {
+                                    int ni = i - 1;
+                                    int c = S[ni] - 'a';
+                                    int nj = drNext[j][c];
+                                    if (nj != -1) {
+                                        int nleni = leni + 1;
+                                        int nlenj = (j + 1 == nj) ? lenj + 1 : 1;
+                                        int cost = 0;
+                                        if (i + leni - 1 == j) {
+                                            nleni++;
+                                            nlenj++;
+                                            cost -= C[ni][nj];
+                                        }
+                                        cost += stCost[ni][ni + nleni - 1] +
+                                                drCost[nj - nlenj + 1][nj];
+                                        upd(dp[line][ni][nleni][nj][nlenj], prevCost + cost);
+                                    }
+                                }
+                                 
+                                // take right
+                                if (j + 1 < N) {
+                                    int nj = j + 1;
+                                    int c = S[nj] - 'a';
+                                    int ni = stNext[i][c];
+                                    if (ni != -1) {
+                                        int nlenj = lenj + 1;
+                                        int nleni = (i - 1 == ni) ? leni + 1 : 1;
+                                        int cost = 0;
+                                        if (i + leni - 1 == j) {
+                                            nleni++;
+                                            nlenj++;
+                                            cost -= C[ni][nj];
+                                        }
+                                        cost += stCost[ni][ni + nleni - 1] +
+                                                drCost[nj - nlenj + 1][nj];
+                                        upd(dp[line][ni][nleni][nj][nlenj], prevCost + cost);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            line = 1 - line;
+        }
+         
+        cout << ans << endl;
+    }
+     
+    return 0;
+}
