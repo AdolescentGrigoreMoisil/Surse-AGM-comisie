@@ -1,0 +1,136 @@
+/**
+ * stud. Popescu Silviu-Emil
+ *     Automatica si Calculatoare
+ *  Problema: Kpal O( sqrt(L) + Q )
+ **/
+ 
+#include <stdio.h>
+#include <set>
+#include <unordered_set>
+#include <vector>
+#include <algorithm>
+#define KMax 20
+#define LMax 100000000
+#define DMax 3125010
+ 
+using namespace std;
+ 
+const char IN[] = "kpal.in", OUT[] = "kpal.out";
+ 
+int K, Q;
+int b[KMax];
+set<int> M;
+vector<int> sol;
+ 
+int getInv( int num, int base ) {
+ 
+    int ret = 0;
+ 
+    do {
+        ret = ret * base + num % base;
+    } while ( num /= base );
+ 
+    return ret;
+}
+ 
+int count ( int num, int base ) {
+ 
+    int ret = 0;
+    do {
+        ++ ret;
+    } while ( num /= base );
+ 
+    return ret;
+ 
+}
+ 
+bool isPal( int num, int base ) {
+    return num == getInv(num, base);
+}
+ 
+void getAllPals( int base ) {
+ 
+    for ( int i = 0; i < base; ++ i )
+        if ( isPal(i, base) )
+            M.insert(i);
+ 
+    for ( int i = 0; ; ++ i ) {
+ 
+        int val = i;
+        int ival = getInv(val, base);
+        int cnt = count( val, base );
+        long long p = 1;
+        int num;
+ 
+        while ( cnt --  )
+            p *= base;
+ 
+        if ( p > LMax ) break;
+ 
+        for ( int j = 0; j < base; ++ j ) {
+ 
+            if ( 1LL * val * p * base + j * p + ival > LMax )
+                break;
+ 
+            num = val * p * base + j * p + ival;
+            if ( isPal(num, base) && num <= LMax  )
+                M.insert(num);
+        }
+ 
+        if ( 1LL * val * p + ival > LMax ) break;
+ 
+        num = val * p + ival;
+        if ( isPal(num, base) && num <= LMax )
+            M.insert(num);
+ 
+        if ( num > LMax ) break;
+ 
+    }
+ 
+}
+ 
+int main() {
+ 
+    freopen(IN, "r", stdin);
+    freopen(OUT, "w", stdout);
+ 
+    scanf("%d", &K);
+ 
+    for ( int i = 1; i <= K; ++ i ) {
+        int base;
+        scanf("%d", &base);
+        getAllPals(base);
+    }
+ 
+    sol.push_back(-1);
+    while ( ! M.empty() ) {
+        int val = * M.begin(); M.erase( M.begin() );
+        sol.push_back(val);
+    }
+ 
+    sort(sol.begin(), sol.end());
+    fprintf(stderr, "%d\n", sol.size());
+ 
+    scanf("%d", &Q );
+ 
+    while ( Q -- ) {
+ 
+        int x, y;
+        scanf("%d%d", &x, &y); -- x;
+ 
+        int u = lower_bound( sol.begin(), sol.end(), y) - sol.begin();
+        int l = lower_bound( sol.begin(), sol.end(), x) - sol.begin();
+ 
+        if ( u >= (int) sol.size() ) u = sol.size() - 1;
+        for ( ; u + 1 < (int) sol.size() && sol[u + 1] <= y; ++ u );
+        for ( ; u >= 1 && sol[u] > y; -- u );
+ 
+        for ( ; l + 1 < (int) sol.size() && sol[l + 1] <= x; ++ l );
+        for ( ; l >= 1 && sol[l] > x; -- l );
+ 
+        printf("%d\n", max(0, u - l) );
+ 
+    }
+ 
+    return 0;
+}
