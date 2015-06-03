@@ -1,0 +1,52 @@
+/**
+ * Code by Chichirim George
+ * "Mircea cel Batran" National College of Constanta
+ *
+ * O ( N ^ 2 )
+ **/
+ 
+#include <cstdio>
+#include <algorithm>
+ 
+using namespace std;
+ 
+int v[5010][5010],sum1[5010][5010],sum2[5010][5010];
+ 
+int main()
+{
+    freopen("plantatii.in", "r", stdin);
+    freopen("plantatii.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        int n,s;
+        scanf("%d%d",&n,&s);
+        for(int i=1;i<=n;i++)
+            for(int j=1;j<=n;j++)
+            {
+                scanf("%d",&v[i][j]);
+                sum1[i][j]=sum1[i-1][j-1]+v[i][j];
+                sum2[i][j]=sum2[i-1][j+1]+v[i][j];
+            }
+        int sol=0;
+        for(int i=1;i<=n;i++)
+            for(int j=1;j<=n;j++)
+            {
+                sol++;
+                while(i-sol>=0 && j-sol>=0 && i+sol-1<=n && j+sol-1<=n && sum1[i+sol-1][j+sol-1]-sum1[i-sol][j-sol]+sum2[i+sol-1][j-sol+1]-sum2[i-sol][j+sol]-v[i][j]<=s) sol++;
+                sol--;
+            }
+        int sol1=sol;
+        sol=0;
+        for(int i=1;i<=n;i++)
+            for(int j=1;j<=n;j++)
+            {
+                sol++;
+                while(i-sol>=0 && j-sol>=0 && i+sol<=n && j+sol<=n && sum1[i+sol][j+sol]-sum1[i-sol][j-sol]+sum2[i+sol][j-sol+1]-sum2[i-sol][j+sol+1]<=s) sol++;
+                sol--;
+            }
+        sol=max(sol1*2-1,sol*2);
+        printf("%d\n",sol);
+    }
+    return 0;
+}
