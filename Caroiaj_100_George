@@ -1,0 +1,82 @@
+/**
+ * Code by George Chichirim
+ * "Mircea cel Batran" National College of Constanta
+ *
+ *  Expected score : 100 points
+ **/
+ 
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+ 
+using namespace std;
+ 
+int v[510][510],cup[1010];
+vector<int> norm,g[250010];
+char vaz[250010],cuplat[250010];
+ 
+int poznorm(int x)
+{
+    return lower_bound(norm.begin(),norm.end(),x)-norm.begin()+1;
+}
+ 
+int cupleaza(int nod)
+{
+    if(vaz[nod]) return 0;
+    vaz[nod]=1;
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+        if(!cup[*it] || cupleaza(cup[*it]))
+        {
+            cup[*it]=nod;
+            cuplat[nod]=1;
+            return 1;
+        }
+    return 0;
+}
+ 
+int main()
+{
+    freopen("caroiaj.in", "r", stdin);
+    freopen("caroiaj.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        int n;
+        scanf("%d",&n);
+        for(int i=1;i<=n;i++)
+            for(int j=1;j<=n;j++)
+            {
+                scanf("%d",&v[i][j]);
+                norm.push_back(v[i][j]);
+            }
+        sort(norm.begin(),norm.end());
+        for(int i=1;i<=n;i++)
+            for(int j=1;j<=n;j++)
+                g[poznorm(v[i][j])].push_back(i-j+n);
+        while(1)
+        {
+            int ok=0,lim=n*n;
+            for(int i=1;i<=lim;i++) vaz[i]=0;
+            for(int i=1;i<=lim;i++)
+                if(!cuplat[i] && cupleaza(i)) ok=1;
+            if(!ok) break;
+        }
+        int ok=1;
+        for(int i=1;i<=2*n-1;i++) if(!cup[i]) {ok=0;break;}
+        if(!ok) printf("Bunicul este dezamagit!\n");
+        else
+        {
+            printf("DA ");
+            for(int i=2*n-1;i;i--) printf("%d ",norm[cup[i]-1]);
+            printf("\n");
+        }
+        for(int i=1;i<=n*n;i++)
+        {
+            g[i].clear();
+            cuplat[i]=0;
+        }
+        for(int i=1;i<=2*n;i++) cup[i]=0;
+        norm.clear();
+    }
+    return 0;
+}
