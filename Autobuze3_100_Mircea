@@ -1,0 +1,254 @@
+/**
+    * problema: autobuze3
+    * concurs: Adolescent Grigore Moisil
+    * autor: Trifan Mircea-Mihai, student, Universitatea din Bucuresti
+    * expected score: 100
+*/
+ 
+ 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+ 
+using namespace std;
+ 
+const int NMax = 200010;
+const int MMax = 400010;
+struct Muchie
+{
+    int x, y, cost, flag;
+    Muchie ()
+    {
+        this -> x = this -> y = this -> cost = 0;
+        this -> flag = false;
+    }
+    Muchie (const int & x, const int & y, const int & cost)
+    {
+        this -> x = x;
+        this -> y = y;
+        this -> cost = cost;
+        this -> flag = false;
+    }
+    inline bool operator < (const Muchie & other) const
+    {
+        return this -> cost < other.cost;
+    }
+};
+Muchie muc[MMax];
+int autobuz_of_node[NMax];
+vector <int> soferii_autobuzului[NMax];
+int nr_fii[NMax];
+ 
+struct Node
+{
+    int x, cost;
+    Node()
+    {
+        this -> x = this -> cost = 0;
+    }
+    Node (const int & x, const int & cost)
+    {
+        this -> x = x;
+        this -> cost = cost;
+    }
+};
+vector <Node> G[NMax];
+ 
+int N, M, T;
+int comp[NMax];
+int weight[NMax], viz[NMax];
+int tatanod[NMax];
+int nr_lanturi;
+int lant_of[NMax];
+int root;
+queue <int> Q;
+ 
+inline int Find(int x)
+{
+    int r = x;
+    while (r != comp[r])
+        r = comp[r];
+    while (comp[x] != r)
+    {
+        int y = comp[x];
+        comp[x] = r;
+        x = y;
+    }
+    return r;
+}
+ 
+inline void Unite(const int & x, const int & y)
+{
+    if (rand() & 1)
+        comp[x] = y;
+    else
+        comp[y] = x;
+}
+ 
+long long MakeApm()
+{
+    sort(muc + 1, muc + M + 1);
+    int added_edges = 0, i = 0;
+    long long ret = 0LL;
+    while (added_edges != N - 1)
+    {
+        ++ i;
+        if (Find(muc[i].x) != Find(muc[i].y))
+        {
+            ++ added_edges;
+            ret += muc[i].cost;
+            Unite(Find(muc[i].x), Find(muc[i].y));
+            muc[i].flag = true;
+        }
+    }
+    return ret;
+}
+ 
+void DFS(const int & node, const int & father)
+{
+    viz[node] = true;
+    weight[node] = 1;
+    tatanod[node] = father;
+    bool frunza = true;
+    int heaviest_fiu, max_weight = 0;
+    for (vector <Node> :: iterator it = G[node].begin(); it != G[node].end(); ++ it)
+        if (!viz[it -> x])
+        {
+            ++ nr_fii[node];
+            frunza = false;
+            DFS(it -> x, node);
+            weight[node] += weight[it -> x];
+            if (weight[it -> x] > max_weight)
+            {
+                max_weight = weight[it -> x];
+                heaviest_fiu = it -> x;
+            }
+        }
+    if (frunza)
+    {
+        ++ nr_lanturi;
+        lant_of[node] = nr_lanturi;
+    }
+    else
+    {
+        lant_of[node] = lant_of[heaviest_fiu];
+    }
+}
+ 
+ 
+void PrintSteps(ostream & g)
+{
+    for (int i = 1; i <= N; ++ i)
+        G[i].clear();
+    for (int i = 1; i <= M; ++ i)
+        if (muc[i].flag)
+        {
+            int x = muc[i].x, y = muc[i].y, cost = muc[i].cost;
+            G[x].push_back(Node(y, cost));
+            G[y].push_back(Node(x, cost));
+        }
+    DFS(1, -1);
+    for (int i = 1; i <= N; ++ i)
+    {
+        autobuz_of_node[i] = i;
+        soferii_autobuzului[i].push_back(i);
+        if (nr_fii[i] == 0)
+        {
+            Q.push(i);
+        }
+    }
+    while (!Q.empty())
+    {
+        int now = Q.front(); Q.pop();
+        int father = tatanod[now];
+        if (father == -1)
+            continue;
+        -- nr_fii[father];
+        if (father == 1)
+        {
+            g << "Drive " << autobuz_of_node[now] << " " << now << " " << father << "\n";
+            for (vector <int> :: iterator it = soferii_autobuzului[autobuz_of_node[now]].begin(); it != soferii_autobuzului[autobuz_of_node[now]].end(); ++ it)
+            {
+                g << "Move " << *it << " " << autobuz_of_node[now] << " " << autobuz_of_node[father] << "\n";
+                soferii_autobuzului[autobuz_of_node[father]].push_back(*it);
+            }
+            soferii_autobuzului[autobuz_of_node[now]].clear();
+        }
+        else
+        {
+            if (lant_of[father] == lant_of[now])
+            {
+                g << "Drive " << autobuz_of_node[now] << " " << now << " " << father << "\n";
+                for (vector <int> :: iterator it = soferii_autobuzului[autobuz_of_node[father]].begin(); it != soferii_autobuzului[autobuz_of_node[father]].end(); ++ it)
+                {
+                    g << "Move " << *it << " " << autobuz_of_node[father] << " " << autobuz_of_node[now] << "\n";
+                    soferii_autobuzului[autobuz_of_node[now]].push_back(*it);
+                }
+                soferii_autobuzului[autobuz_of_node[father]].clear();
+                autobuz_of_node[father] = autobuz_of_node[now];
+            }
+            else
+            {
+                g << "Drive " << autobuz_of_node[now] << " " << now << " " << father << "\n";
+                for (vector <int> :: iterator it = soferii_autobuzului[autobuz_of_node[now]].begin(); it != soferii_autobuzului[autobuz_of_node[now]].end(); ++ it)
+                {
+                    g << "Move " << *it << " " << autobuz_of_node[now] << " " << autobuz_of_node[father] << "\n";
+                    soferii_autobuzului[autobuz_of_node[father]].push_back(*it);
+                }
+                soferii_autobuzului[autobuz_of_node[now]].clear();
+            }
+        }
+ 
+        if (nr_fii[father] == 0)
+        {
+            Q.push(father);
+        }
+    }
+    g << "Gata\n";
+}
+ 
+void Reset()
+{
+    for (int i = 1; i <= N; ++ i)
+    {
+        G[i].clear();
+        soferii_autobuzului[i].clear();
+        autobuz_of_node[i] = nr_fii[i] = lant_of[i] = tatanod[i] = weight[i] = comp[i] = 0;
+        viz[i] = false;
+    }
+    nr_lanturi = 0;
+}
+ 
+ 
+int main()
+{
+    root = 1;
+    ifstream f ("autobuze3.in");
+    ofstream g ("autobuze3.out");
+    f >> T;
+    for (int test = 1; test <= T; ++ test)
+    {
+        f >> N >> M;
+        for (int i = 1; i <= N; ++ i)
+            comp[i] = i;
+        for (int i = 1; i <= M; ++ i)
+        {
+            int x, y, cost;
+            f >> x >> y >> cost;
+            muc[i] = Muchie(x, y, cost);
+            G[x].push_back(Node(y, cost));
+            G[y].push_back(Node(x, cost));
+        }
+        long long nr = MakeApm();
+        cout << nr << "\n";
+        g << nr << "\n";
+        PrintSteps(g);
+        if (test < T)
+        {
+            Reset();
+        }
+    }
+    return 0;
+}
