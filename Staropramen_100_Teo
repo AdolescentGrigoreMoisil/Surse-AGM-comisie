@@ -1,0 +1,71 @@
+/*
+ * STAROPRAMEN
+ *
+ * solutie memorie O(sqrtN)
+ *
+ * Teo Ionescu
+ */
+#include<fstream>
+#include<cstring>
+#include<cmath>
+using namespace std;
+ofstream out("staropramen.out");
+const int Nmax = 500000;
+short int C[2][11][800],H[800];
+char s[2*800],A[800],B[800];
+int T,N,L[11];
+int main(){
+    ifstream in("staropramen.in");
+    in>>T;
+    for(int test=1;test<=T;test++){
+        in>>N; in.get();
+        int n=max(1,int(sqrt(N)));
+        while(N>0){
+            n=min(n,N),N-=n,L[test]++;
+            in.read(s,2*n);
+            int k=0,a=0,b=0;
+            for(int i=1;i<=n;i++){
+                A[++a]=int(s[k++])-'0';
+                B[++b]=int(s[k++])-'0';
+            }
+            for(int k=0;k<=1;k++){
+                int t=k;
+                for(int i=n;i>=1;i--){
+                    s[i]=A[i]+B[i]+t;
+                    t=s[i]/10;
+                    s[i]%=10;
+                }
+                C[k][test][L[test]]=t;
+            }
+        }
+    }
+    in.close();
+    ifstream in2("staropramen.in");
+    in2>>T;
+    for(int test=1;test<=T;test++){
+        H[L[test]+1]=0;
+        for(int i=L[test];i>=1;i--) H[i]=C[H[i+1]][test][i];
+        in2>>N; in2.get();
+        int n=max(1,int(sqrt(N))),buc=0;
+        if(H[1]) out<<H[1];
+        while(N>0){
+            n=min(n,N),N-=n,buc++;
+            in2.read(s,2*n);
+            int k=0,a=0,b=0;
+            for(int i=1;i<=n;i++){
+                A[++a]=int(s[k++])-'0';
+                B[++b]=int(s[k++])-'0';
+            }
+            int t=H[buc+1];
+            for(int i=n;i>=1;i--){
+                s[i]=A[i]+B[i]+t;
+                t=s[i]/10;
+                s[i]%=10;
+            }
+            for(int i=1;i<=n;i++) out<<int(s[i]);
+        }
+        out<<'\n';
+    }
+    in2.close();
+    return 0;
+}
