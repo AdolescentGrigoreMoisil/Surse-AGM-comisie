@@ -1,0 +1,194 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+
+const char IN [ ] =  "autobuze3.in" ;
+const char OUT [ ] = "autobuze3.out" ;
+const int MAX = 200114 ;
+
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( int a = b ; a >= c ; -- a )
+
+using namespace std ;
+
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+
+int tata [ MAX ] , rang [ MAX ] ;
+
+inline int stramos ( int nod )
+{
+    int R = nod ;
+    for ( ; tata [ R ] != R ; R = tata [ R ] ) ;
+
+    while ( nod != tata [ nod ] )
+    {
+        int aux = tata [ nod ] ;
+        tata [ nod ] = R ;
+        nod = aux ;
+    }
+
+    return R ;
+}
+
+inline void unite ( int a , int b )
+{
+    a = stramos( a ) ;
+    b = stramos( b ) ;
+    if ( a == b ) return ;
+
+    if ( b > a )
+        swap ( a , b ) ;
+
+    tata [ b ] = a ;
+    int aux = stramos ( b ) ;
+    rang [ a ] += rang [ b ] ;
+}
+
+struct APM {
+    int x , y , cost ;
+
+    void sett ( int a , int b , int c )
+    {
+        x = a ;
+        y = b ;
+        cost = c ;
+    }
+};
+
+APM q [ MAX * 3 ] ;
+
+bool cmp ( APM a , APM b )
+{
+    return a.cost < b.cost ;
+}
+
+vector < int > gr [ MAX ] ;
+vector < int > bus [ MAX ] ;
+
+bitset < MAX > viz ;
+
+int superbaws [ MAX ] ;
+int subarbore [ MAX ] ;
+int autobuz [ MAX ] ;
+
+inline void dfs ( int nod , int boss )
+{
+    viz [ nod ] = 1 ;
+    subarbore [ nod ] = 1 ;
+    int CET = 0 , te_pup = 1 ;
+    for ( auto x : gr [ nod ] )
+        if ( x != boss and viz [ x ] == 0 ){
+            te_pup = 0 ;
+            superbaws [ x ] = nod ;
+            dfs ( x , nod ) ;
+
+            if ( subarbore [ x ] > subarbore [ CET ] )
+                CET = x ;
+
+            subarbore [ nod ] += subarbore [ x ] ;
+        }
+
+    if ( te_pup )
+        return ;
+
+    for ( auto x : gr [ nod ] )
+        if ( x != boss )
+            cout << "Drive " << autobuz[ x ] << " " << x << " " << nod << "\n";
+
+    autobuz [ nod ] = autobuz [ CET ] ;
+
+    for ( auto x : gr [ nod ] )
+    {
+        if ( x != boss && x != CET )
+        {
+            for ( auto y : bus [ autobuz [ x ] ] )
+            {
+                cout << "Move " << y << " " << autobuz [ x ] << " " << autobuz [ CET ] << "\n";
+                bus [ autobuz [ CET ] ].pb ( y ) ;
+            }
+            bus [ autobuz [ x ] ].clear ( ) ;
+        }
+    }
+
+    cout << "Move " << nod << " " << nod << " " << autobuz [ CET ] << "\n";
+
+    bus [ autobuz [ CET ] ].pb ( nod ) ;
+
+}
+
+int main ( void )
+{
+    int t ;
+    cin >> t ;
+    while ( t -- )
+    {
+
+        int n , m ;
+        cin >> n >> m ;
+        FORN ( i , 1 , n )
+        {
+            tata [ i ] = i ;
+            rang [ i ] = 1 ;
+            gr [ i ].clear ( ) ;
+            bus [ i ].clear ( ) ;
+        }
+        viz.reset ( ) ;
+
+        FORN ( i , 1 , m )
+        {
+            int x , y , cost ;
+            cin >> x >> y >> cost ;
+            q [ i ].sett ( x , y , cost ) ;
+        }
+
+        sort ( q + 1 , q + m + 1 , cmp ) ;
+
+        int CET = 0 ;
+        FORN ( i , 1 , m )
+        {
+            if ( stramos( q [ i ].x ) == stramos ( q [ i ].y ) ) continue ;
+
+            else {
+                assert ( q [ i ].x <= n and q [ i ].x >= 1 ) ;
+                assert ( q [ i ].y <= n and q [ i ].y >= 1 ) ;
+                unite ( q [ i ].x , q [ i ].y ) ;
+                CET = CET + q [ i ].cost ;
+                gr [ q [ i ].x ].pb ( q [ i ].y ) ;
+                gr [ q [ i ].y ].pb ( q [ i ].x ) ;
+                //cout << q [ i ].x << ' ' << q [ i ].y << '\n' ;
+            }
+        }
+        //cout << endl << endl << endl ;
+
+        cout << CET << '\n' ;
+
+        FORN ( i , 1 , n )
+        {
+            bus [ i ].pb ( i ) ;
+            autobuz [ i ] = i ;
+        }
+        dfs ( 1 , - 1 ) ;
+
+        cout << "Gata\n" ;
+    }
+    return 0;
+}
