@@ -1,0 +1,89 @@
+/*
+ * PALSUBSECV
+ *
+ * solutie O( N^5 ), memorie O( N^4 )
+ *
+ * dinamica d[len][i][pref][suf][L]
+ *
+ * Teo Ionescu
+ */
+#include<fstream>
+#include<cstring>
+using namespace std;
+ifstream in("palsubsecv.in");
+ofstream out("palsubsecv.out");
+const int INF = 0x3f3f3f3f;
+const int Nmax = 34;
+int le[Nmax][Nmax],ri[Nmax][Nmax],ds[Nmax][Nmax];
+int C[5][Nmax][Nmax][Nmax][Nmax],ans[Nmax];
+char s[Nmax];
+int T,N,M,B;
+void inc(int &x,int y){
+    x=min(x,y);
+}
+int sol(){
+    int mx,cst,iv;
+    for(int i=1;i<=N;i++) inc( C[1][i][0][0][0] , 0 );
+    for(int i=1;i<N;i++) if(s[i]==s[i+1]) inc( C[2][i][2][2][2] , le[i][1]+le[i+1][0] );
+    for(int l=1;l<N;l++){
+        memset(C[(l-1)%5],INF,sizeof(C[(l-1)%5]));
+        for(int i=1;i+l-1<=N;i++){
+            for(int L=0;L<=l;L++){
+                for(int pref=0;pref<=L;pref++){
+                    for(int suf=0;suf<=L;suf++){
+                        if(1<=i-1) inc( C[(l+1)%5][i-1][0][suf][L] , C[l%5][i][pref][suf][L] );
+                        if(i+l<=N) inc( C[(l+1)%5][i][pref][0][L] , C[l%5][i][pref][suf][L] );
+                        if(1<=i-1 && i+l<=N){
+                            if(s[i-1]==s[i+l]){
+                                cst = C[l%5][i][pref][suf][L] + le[i-1][pref] + ri[i+l][suf];
+                                iv=1;
+                                if(pref==l) cst+=ds[i-1][i+l],iv=2;
+                                inc( C[(l+2)%5][i-1][pref+iv][suf+iv][L+2] , cst );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for(int L=0;L<=N;L++){
+        ans[L]=INF;
+        for(int pref=0;pref<=L;pref++){
+            for(int suf=0;suf<=L;suf++){
+                if( C[N%5][1][pref][suf][L] != INF ){
+                    ans[L]=min(ans[L],C[N%5][1][pref][suf][L]);
+                }
+            }
+        }
+    }
+    mx=0;
+    for(int L=0;L<=N;L++){
+        if(ans[L]<=B) mx=max(mx,L);
+    }
+    return mx;
+}
+int main(){
+    in>>T;
+    for(;T;--T){
+        memset(le,0,sizeof(le));
+        memset(ri,0,sizeof(ri));
+        memset(ds,0,sizeof(ds));
+        memset(C,INF,sizeof(C));
+        in>>N>>M>>B; in.get();
+        in.getline(s+1,Nmax);
+        int a,b,c;
+        for(int i=1;i<=M;i++){
+            in>>a>>b>>c;
+            ds[a][b]+=c;
+            for(int i=b-a;i<=N;i++) le[a][i]+=c,ri[b][i]+=c;
+        }
+        out<<sol()<<'\n';
+        /*for(int i=0;i<=N;i+=2){
+            out<<ans[i];
+            if(ans[i]<=B) out<<'*';
+            out<<'\n';
+        }
+        out<<"\n\n\n";*/
+    }
+    return 0;
+}
