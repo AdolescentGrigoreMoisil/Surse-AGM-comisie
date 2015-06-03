@@ -1,0 +1,32 @@
+/**
+    * problema: clasic
+    * concurs: Adolescent Grigore Moisil
+    * autor: Trifan Mircea-Mihai, student, Universitatea din Bucuresti
+    * expected score: 100
+*/
+ 
+#include <cstdio>
+ 
+using namespace std;
+ 
+int main()
+{
+    freopen("clasic.in", "r", stdin);
+    freopen("clasic.out", "w", stdout);
+ 
+    int T;
+    scanf ("%d", &T);
+    while(T--)
+    {
+        long long sum = 0;
+        int N;
+        scanf ("%d", &N);
+        while (N --)
+        {
+            long long now; scanf ("%lld", &now);
+            sum = sum ^ now;
+        }
+        printf("%lld\n", sum);
+    }
+    return 0;
+}
