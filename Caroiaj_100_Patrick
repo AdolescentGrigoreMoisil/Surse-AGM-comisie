@@ -1,0 +1,180 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ *
+ *  Expected score : 100 points
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "caroiaj.in" ;
+const char OUT [ ] = "caroiaj.out" ;
+const int MAX = 314 ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( int a = b ; a >= c ; -- a )
+ 
+using namespace std ;
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+int mat [ MAX ] [ MAX ] ;
+ 
+vector < int > gr [ MAX * MAX ] ;
+ 
+map < int , int > H ;
+ 
+bitset < MAX * MAX > viz ;
+ 
+int rightboss [ MAX * 3 ] , leftboss [ MAX * MAX ] ;
+int time4convert [ MAX * MAX ] ;
+vector < int > diagonale [ MAX * 3 ] ;
+ 
+map < pair < int , int > , int > HASHIN ;
+ 
+inline void reset_time ( int n )
+{
+    H.clear ( ) ;
+    int lim = n * n ;
+    FORN ( i , 1 , lim )
+        gr [ i ].clear ( ) ;
+    FORN ( i , 1 , 3 * n )
+        diagonale [ i ].clear( ) ;
+    memset ( rightboss , 0 , sizeof ( rightboss ) ) ;
+    memset ( leftboss , 0 , sizeof ( leftboss ) ) ;
+    viz.reset ( ) ;
+}
+ 
+bool cuplaj ( int nod )
+{
+    if ( viz [ nod ] )
+        return 0 ;
+    viz [ nod ] = 1 ;
+    for ( auto x : gr [ nod ] )
+    {
+        if ( rightboss [ x ] == 0 )
+        {
+            leftboss [ nod ] = x ;
+            rightboss [ x ] = nod ;
+            return 1 ;
+        }
+    }
+    for ( auto x : gr [ nod ] )
+        if ( cuplaj ( rightboss [ x ] ) )
+        {
+            leftboss [ nod ] = x ;
+            rightboss [ x ] = nod ;
+            return 1 ;
+        }
+    return 0 ;
+}
+ 
+int main ( void )
+{
+    int t ;
+    cin >> t ;
+    FORN ( tests , 1 , t )
+    {
+        int n ;
+        cin >> n ;
+        reset_time ( n ) ;
+        FORN ( i , 1 , n )
+            FORN ( j , 1 , n )
+            {
+                cin >> mat [ i ] [ j ] ;
+                assert ( mat [ i ] [ j ] >= 1 ) ;
+                assert ( mat [ i ] [ j ] <= 1000000000LL ) ;
+                H [ mat [ i ] [ j ] ] = 1 ;
+                diagonale [ j - i + n ].pb ( mat [ i ] [ j ] ) ;
+            }
+        int ordine = 0 ;
+        for ( auto &x : H )
+            x.second = ++ ordine ;
+        assert ( ordine <= MAX * MAX ) ;
+        FORN ( i , 1 , n )
+            FORN ( j , 1 , n )
+            {
+                gr [ H [ mat [ i ] [ j ] ] ].pb ( j - i + n ) ; /// j - i + n e numarul de ordine al diagonalei
+                time4convert [ H [ mat [ i ] [ j ] ] ] = mat [ i ] [ j ] ;
+            }
+ 
+        /// vom face cuplaj maxim
+        int st = ordine ;
+        int dr = 2 * n - 1 ;
+        int ok = 1 ;
+        do {
+            ok = 0 ;
+            viz.reset ( ) ;
+            for ( int i = 1 ; i <= st ; ++ i )
+                if ( leftboss [ i ] == 0 )
+                    if ( cuplaj ( i ) )
+                        ok = 1 ;
+        }while ( ok ) ;
+ 
+        int ce_trebuie = 0 ;
+        for ( int i = 1 ; i <= st ; ++ i )
+            if ( leftboss [ i ] )
+                ++ ce_trebuie ;
+ 
+        //FORN ( i , 1 , n ){
+        //    FORN ( j , 1 , n )
+        //    {
+        //        cout << mat [ i ] [ j ] << ' ' ;
+        //    }
+        //    cout << '\n' ;
+        //}
+ 
+        //cout << endl ;
+        //cout << endl ;
+        //cout << endl ;
+        //cout << endl ;
+        //FORN ( i , 1 , 2 * n - 1 )
+        //    cout << rightboss [ i ] << ' ' ;
+        //cout << endl ;
+        //cout << endl ;
+        //cout << endl ;
+        //cout << endl ;
+ 
+        //for ( auto x : HASHIN )
+        //{
+        //    cout << x.first.first << ' ' << x.first.second << ' ' << x.second << '\n' ;
+        //}
+ 
+        if ( ce_trebuie == 2 * n - 1 )
+        {
+            cout << "DA " ;
+            FORN ( i , 1 , dr ){
+                cout << time4convert [ rightboss [ i ] ] << ' ' ;
+                int ok = 0 ;
+                for ( auto x : diagonale [ i ] )
+                    if ( x == time4convert [ rightboss [ i ] ] )
+                        ok = 1 ;
+                assert( ok ) ;
+            }
+            cout << '\n' ; //cout << "De pe diagonala principala " << i << " eu iau numarul " << rightboss [ i ] << '\n' ;
+        }
+        else cout << "Bunicul este dezamagit!\n" ;
+ 
+        //cout << endl ;
+        //cout << endl ;
+        //cout << endl ;
+        //cout << endl ;
+    }
+    return 0;
+}
