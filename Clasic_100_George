@@ -1,0 +1,30 @@
+/**
+ * Code by George Chichirim
+ * "Mircea cel Batran" National College of Constanta
+ *
+ *  Expected score : 100 points
+ **/
+
+#include <cstdio>
+
+using namespace std;
+
+int main()
+{
+    freopen("clasic.in", "r", stdin);
+    freopen("clasic.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        int n;
+        long long s=0,x;
+        scanf("%d",&n);
+        for(int i=1;i<=n;i++)
+        {
+            scanf("%lld",&x);
+            s^=x;
+        }
+        printf("%lld\n",s);
+    }
+    return 0;
+}
