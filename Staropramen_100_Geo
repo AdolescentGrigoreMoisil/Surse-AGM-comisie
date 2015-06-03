@@ -1,0 +1,72 @@
+/**
+ * Code by George Chichirim
+ * "Mircea cel Batran" National College of Constanta
+ *
+ *  Expected score : 100 points
+ **/
+ 
+#include <cstdio>
+#include <cmath>
+#include <algorithm>
+ 
+using namespace std;
+ 
+int v[11][2][750],sol[750],nr[11],prim[750];
+char sir[1500];
+ 
+int main()
+{
+    freopen("staropramen.in", "r", stdin);
+    freopen("staropramen.out", "w", stdout);
+    int test;
+    scanf("%d",&test);
+    for(int t=1;t<=test;t++)
+    {
+        int nn,n;
+        scanf("%d\n",&nn);
+        n=sqrt(nn);
+        while(nn)
+        {
+            n=min(n,nn);nn-=n;nr[t]++;
+            fgets(sir+1,2*n+1,stdin);
+            for(int k=0;k<=1;k++)
+            {
+                int s=k;
+                for(int i=2*n;i;i-=2)
+                {
+                    int a=sir[i]-'0'+sir[i-1]-'0'+s;
+                    if(a>9) s=1;
+                    else s=0;
+                }
+                v[t][k][nr[t]]=s;
+            }
+        }
+    }
+    fclose(stdin);
+    freopen("staropramen.in", "r", stdin);
+    scanf("%d",&test);
+    for(int t=1;t<=test;t++)
+    {
+        int nn,n;
+        scanf("%d\n",&nn);
+        n=sqrt(nn);
+        for(int i=nr[t];i;i--) prim[i]=v[t][prim[i+1]][i+1];
+        for(int i=1;i<=nr[t];i++)
+        {
+            n=min(n,nn);nn-=n;
+            fgets(sir+1,2*n+1,stdin);
+            int s=prim[i];
+            for(int j=2*n;j;j-=2)
+            {
+                int a=sir[j]-'0'+sir[j-1]-'0'+s;
+                if(a>9) s=1;
+                else s=0;
+                sol[j/2]=a%10;
+            }
+            if(i==1 && s) printf("1");
+            for(int j=1;j<=n;j++) printf("%d",sol[j]);
+        }
+        printf("\n");
+    }
+    return 0;
+}
