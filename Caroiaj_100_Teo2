@@ -1,0 +1,63 @@
+* CAROIAJ
+ *
+ * solutie maximum matching
+ *    ++ FAST
+ *
+ * Teo Ionescu
+ */
+#include<fstream>
+#include<vector>
+#include<map>
+using namespace std;
+ifstream in("caroiaj.in");
+ofstream out("caroiaj.out");
+const int Nmax = 301;
+int a[Nmax][Nmax],rv[Nmax*Nmax];
+int l[2*Nmax],r[Nmax*Nmax];
+int m[2*Nmax];
+vector<int> G[2*Nmax];
+map<int,int> norm;
+int T,N,K;
+int addp(int x){
+    if(m[x]) return 0;
+    m[x]=1;
+    for(vector<int>::iterator t=G[x].begin();t!=G[x].end();++t){
+        if(!r[*t] || addp(r[*t])){l[x]=*t,r[*t]=x;return 1;}
+    }
+    return 0;
+}
+int main(){
+    in>>T;
+    for(;T;--T){
+        for(int i=1;i<=2*N;i++) l[i]=m[i]=0,G[i].clear();
+        for(int i=1;i<=N*N;i++) r[i]=0;
+        K=0,norm.clear();
+        in>>N;
+        for(int i=1;i<=N;i++) for(int j=1;j<=N;j++) in>>a[i][j],norm[a[i][j]]=0;
+        for(map<int,int>::iterator t=norm.begin();t!=norm.end();++t) t->second=++K,rv[K]=t->first;
+        for(int j=N;j>=1;j--) for(int w=j;w<=N;w++) G[N-j+1].push_back(norm[a[w-j+1][w]]);
+        for(int i=2;i<=N;i++) for(int w=i;w<=N;w++) G[N+i-1].push_back(norm[a[w][w-i+1]]);
+        for(int x=1;x<=2*N-1;x++){
+            int c=0;
+            for(vector<int>::iterator t=G[x].begin();t!=G[x].end();++t) if(!r[*t]) c=*t;
+            if(c) l[x]=c,r[c]=x;
+        }
+        int ok=1;
+        while(ok){
+            ok=0;
+            for(int i=1;i<=2*N;i++) m[i]=0;
+            for(int i=1;i<=2*N-1;i++){
+                if(!l[i]) ok|=addp(i);
+            }
+        }
+        ok=1;
+        for(int i=1;i<=2*N-1;i++) if(!l[i]) ok=0;
+        if(!ok) out<<"Bunicul este dezamagit!\n";
+        else{
+            out<<"DA";
+            for(int i=2*N-1;i>=1;i--) out<<" "<<rv[l[i]];
+            out<<"\n";
+        }
+    }
+    return 0;
+}
