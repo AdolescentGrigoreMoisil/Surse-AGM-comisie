@@ -1,0 +1,33 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ *
+ *  Expected score : 100 points
+ **/
+
+#include <bits/stdc++.h>
+
+using namespace std;
+
+ifstream fin ( "clasic.in" ) ;
+ofstream fout ( "clasic.out" ) ;
+
+int main ( void )
+{
+    int t ;
+    fin >> t ;
+    while ( t -- )
+    {
+        long long CET = 0 ;
+        int n ;
+        fin >> n ;
+        while ( n -- )
+        {
+            long long x ;
+            fin >> x ;
+            CET ^= x ;
+        }
+        fout << CET << '\n' ;
+    }
+    return 0;
+}
