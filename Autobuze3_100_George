@@ -1,0 +1,113 @@
+/**
+ * Code by George Chichirim
+ * "Mircea cel Batran" National College of Constanta
+ *
+ *  Expected score : 100 points
+ **/
+
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+#include <set>
+
+using namespace std;
+
+struct muchie
+{
+    int x,y,c;
+    bool operator <(const muchie &aux) const
+    {
+        return c<aux.c;
+    }
+}edge[500010];
+int rad[500010],masina[500010],size[500010];
+vector<int> v[500010];
+char vaz[500010];
+set<int> ceva[100010];
+
+int radacina(int x)
+{
+    int i=x,j=x;
+    for(;i!=rad[i];i=rad[i]);
+    while(j!=i)
+    {
+        int aux=rad[j];
+        rad[j]=i;
+        j=aux;
+    }
+    return i;
+}
+
+void dfs(int nod)
+{
+    vaz[nod]=size[nod]=1;
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(!vaz[*it])
+        {
+            dfs(*it);
+            size[nod]+=size[*it];
+        }
+}
+
+void dfs1(int nod,int tata,int car1,int car2)
+{
+    printf("Move %d %d %d\n",nod,car1,car2);
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(*it!=tata) dfs1(*it,nod,car1,car2);
+}
+
+void solve(int nod,int tata)
+{
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(*it!=tata) solve(*it,nod);
+    int fiu=0;
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(*it!=tata && size[*it]>size[fiu]) fiu=*it;
+    if(!fiu) return;
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(*it!=tata) printf("Drive %d %d %d\n",masina[*it],*it,nod);
+    printf("Move %d %d %d\n",nod,masina[nod],masina[fiu]);
+    masina[nod]=masina[fiu];
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(*it!=tata && *it!=fiu) dfs1(*it,nod,masina[*it],masina[nod]);
+}
+
+int main()
+{
+    freopen("autobuze3.in", "r", stdin);
+    freopen("autobuze3.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        int n,m,sol=0;
+        scanf("%d%d",&n,&m);
+        for(int i=1;i<=m;i++)
+        {
+            scanf("%d%d%d",&edge[i].x,&edge[i].y,&edge[i].c);
+            if(ceva[edge[i].x].find(edge[i].y)!=ceva[edge[i].x].end()) fprintf(stderr,"1");
+            ceva[edge[i].x].insert(edge[i].y);
+            ceva[edge[i].y].insert(edge[i].x);
+        }
+        sort(edge+1,edge+1+m);
+        for(int i=1;i<=n;i++) rad[i]=masina[i]=i;
+        for(int i=1;i<=m;i++)
+            if(radacina(edge[i].x)!=radacina(edge[i].y))
+            {
+                sol+=edge[i].c;
+                v[edge[i].x].push_back(edge[i].y);
+                v[edge[i].y].push_back(edge[i].x);
+                rad[radacina(edge[i].y)]=radacina(edge[i].x);
+            }
+        printf("%d\n",sol);
+        dfs(1);
+        solve(1,0);
+        printf("Gata\n");
+        for(int i=1;i<=n;i++)
+        {
+            ceva[i].clear();
+            v[i].clear();
+            vaz[i]=0;
+        }
+    }
+    return 0;
+}
