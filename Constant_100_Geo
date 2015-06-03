@@ -1,0 +1,174 @@
+/*
+    George Marcus
+    Complexitate: O(T*(N*MAXS + N*logN + Q*logN + Q*MAXS^2))
+    Scor: 100
+*/
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define INF 1000000000
+#define MAXN 100050
+#define MAXSPEED 10
+#define MAXLOGN 18
+ 
+int N, Q;
+char S[MAXN];
+int numNodes;
+int L[MAXN], R[MAXN];
+int st[MAXN];
+int inNode[MAXN];
+vector<int> A[MAXN];
+int speed[MAXN];
+int closestNode[MAXN][MAXSPEED];
+int T[MAXN];
+int dp[MAXLOGN][MAXN];
+int lvl[MAXN];
+int sumAbove[MAXN][MAXSPEED];
+int sum[MAXN][MAXSPEED];
+ 
+void dfs(int node, int prv) {
+    T[node] = prv;
+    lvl[node] = (prv == -1) ? 0 : lvl[prv] + 1;
+    for (int i = 1; i < MAXSPEED; i++) {
+        closestNode[node][i] = (prv == -1) ? -1 : closestNode[prv][i];
+        sumAbove[node][i] = (prv == -1) ? 0 : sumAbove[prv][i];
+    }
+    closestNode[node][ speed[node] ] = node;
+    sumAbove[node][ speed[node] ]++;
+    for (auto x : A[node]) {
+        dfs(x, node);
+    }
+}
+ 
+void precalc() {
+    numNodes = 0;
+    int p = 0;
+    for (int i = 0; i <= N; i++) {
+        for (int s = 1; s < MAXSPEED; s++) {
+            sum[i][s] = (i == 0) ? 0 : sum[i - 1][s];
+        }
+         
+        if (isdigit(S[i])) {
+            assert(S[0] != '0');
+            if (p > 0) {
+                A[st[p - 1]].push_back(numNodes);
+            }
+            L[numNodes] = i;
+            speed[numNodes] = S[i] - '0';
+            sum[i][S[i] - '0']++;
+            st[p++] = numNodes++;
+        } else if (S[i] == ')') {
+            assert(p > 0);
+            R[ st[p - 1] ] = i - 1;
+            p--;
+        }
+         
+        if (p > 0) {
+            inNode[i] = st[p - 1];
+        }
+    }
+    assert(p == 0);
+     
+    dfs(0, -1);
+    for (int i = 0; i < numNodes; i++) {
+        A[i].clear(); 
+    }
+     
+    for (int i = 0; i < N; i++) {
+        dp[0][i] = T[i];
+    }
+    for (int j = 1; (1 << j) <= N; j++) {
+        for (int i = 0; i < N; i++) {
+            if (dp[j - 1][i] == -1) {
+                dp[j][i] = -1;
+            } else {
+                dp[j][i] = dp[j - 1][ dp[j - 1][i] ];
+            }
+        }
+    }
+}
+ 
+int kthAncestor(int node, int k) {
+    for (int i = 0; i < MAXLOGN; i++) {
+        if (k & (1 << i)) {
+            node = dp[i][node];
+        }
+    }
+    return node;
+}
+ 
+int calcLca(int a, int b) {
+    if (lvl[a] > lvl[b]) {
+        swap(a, b);
+    }
+    if (lvl[a] != lvl[b]) {
+        b = kthAncestor(b, lvl[b] - lvl[a]);
+    }
+    if (a == b) {
+        return a;
+    }
+    for (int i = MAXLOGN - 1; i >= 0; i--) {
+        if (dp[i][a] != -1 && dp[i][b] != -1 && dp[i][a] != dp[i][b]) {
+            a = dp[i][a];
+            b = dp[i][b];
+        }
+    }
+    return dp[0][a];
+}
+ 
+int solve(int a, int b) {
+    int nodeA = inNode[a];
+    int nodeB = inNode[b];
+    int lca = calcLca(nodeA, nodeB);
+     
+    int ans = INF;
+    for (int s = 1; s < MAXSPEED; s++) {
+        if (closestNode[lca][s] != -1) {
+            int node = closestNode[lca][s];
+            int crt = 0;
+            for (int other = 1; other < MAXSPEED; other++) {
+                if (other != s) {
+                    crt += sum[b][other];
+                    if (a > 0) {
+                        crt -= sum[a - 1][other];
+                    }
+                    crt += sumAbove[nodeA][other] - sumAbove[node][other];
+                }
+            }
+            if (L[nodeA] == a && speed[nodeA] != s) {
+                crt--;
+            }
+            ans = min(ans, crt);
+        }
+    }
+     
+    return ans;
+}
+ 
+int main() {
+    freopen("constant.in", "r", stdin);
+    freopen("constant.out","w", stdout);
+     
+    int testCount;
+    scanf("%d", &testCount);
+    while (testCount--) {
+        assert(scanf("%d %d\n", &N, &Q) == 2);
+        fgets(S, sizeof(S), stdin);
+        assert('1' <= S[0] && S[0] <= '9');
+        assert(S[N] == ')');
+        precalc();
+         
+        int a, b;
+        for (int i = 0; i < Q; i++) {
+            assert(scanf("%d %d", &a, &b) == 2);
+            int ans = solve(a, b - 1);
+            assert(ans >= 0 && ans <= N / 2);
+            printf("%d\n", ans);
+        }
+        printf("\n");
+    }
+     
+    return 0;
+}
