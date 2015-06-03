@@ -1,0 +1,82 @@
+// Geo Marcus
+
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define INF 1000000000
+#define MAXN 1005
+ 
+int T, N, S;
+int A[MAXN][MAXN];
+int dp[MAXN][MAXN];
+int ds[MAXN][MAXN];
+ 
+int calcSum(int pi, int pj, int len) {
+    int sum = dp[pi + len - 1][pj + len - 1] - dp[pi - 1][pj - 1];
+    sum += ds[pi + len - 1][pj] - ds[pi - 1][pj + len];
+    if (len & 1) {
+        sum -= A[pi + len / 2][pj + len / 2];
+    }
+    return sum;
+}
+ 
+int main() {
+    freopen("plantatii.in", "r", stdin);
+    freopen("plantatii.out","w", stdout);
+     
+    scanf("%d", &T);
+    while (T--) {
+        scanf("%d %d", &N, &S);
+        int minElem = INF;
+        for (int i = 1; i <= N; i++) {
+            for (int j = 1; j <= N; j++) {
+                scanf("%d", &A[i][j]);
+                minElem = min(minElem, A[i][j]);
+            }
+        }
+         
+        for (int i = 1; i <= N; i++) {
+            for (int j = 1; j <= N; j++) {
+                dp[i][j] = A[i][j] + dp[i - 1][j - 1];
+                ds[i][j] = A[i][j] + ds[i - 1][j + 1];
+            }
+        }
+        for (int i = 0; i <= N + 1; i++) {
+            dp[i][0] = dp[i][N + 1] = 0;
+            dp[0][i] = dp[N + 1][i] = 0;
+            ds[i][0] = ds[i][N + 1] = 0;
+            ds[0][i] = ds[N + 1][i] = 0;
+        }
+         
+        int evenLen = 0;
+        int oddLen = 0;
+        for (int i = 1; i <= N; i++) {
+            for (int j = 1; j <= N; j++) {
+                oddLen++;
+                while (i - oddLen > 0 && i + oddLen <= N &&
+                       j - oddLen > 0 && j + oddLen <= N &&
+                       calcSum(i - oddLen, j - oddLen, 2 * oddLen + 1) <= S) {
+                    oddLen++;
+                }
+                oddLen--;
+                 
+                evenLen++;
+                while (i - evenLen + 1 > 0 && i + evenLen <= N &&
+                       j - evenLen + 1 > 0 && j + evenLen <= N &&
+                       calcSum(i - evenLen + 1, j - evenLen + 1, 2 * evenLen) <= S) {
+                    evenLen++;
+                }
+                evenLen--;
+            }
+        }
+         
+        int ans = max(2 * oddLen + 1, 2 * evenLen);
+        if (minElem > S) {
+            ans = 0;
+        }
+        printf("%d\n", ans);
+    }
+     
+    return 0;
+}
