@@ -1,0 +1,100 @@
+/**
+ * Code by George Chichirim
+ * "Mircea cel Batran" National College of Constanta
+ *
+ *  Expected score : 100 points
+ **/
+ 
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+#include <cstring>
+ 
+using namespace std;
+ 
+struct suffix
+{
+    int s1,s2,poz;
+    bool operator <(const suffix &aux) const
+    {
+        if(s1==aux.s1) return s2<aux.s2;
+        return s1<aux.s1;
+    }
+    bool operator ==(const suffix &aux) const
+    {
+        return (s1==aux.s1 && s2==aux.s2);
+    }
+}v[20010];
+int p[16][20010],sol[20010],aib[20010],poz[20010],n,logn;
+vector<int> v1[20010];
+char sir[20010];
+ 
+void aib_update(int i,int s)
+{
+    for(;i<=n;i+=i&(-i)) aib[i]+=s;
+}
+ 
+int query(int s)
+{
+    int x=0;
+    for(int i=logn;i>=0;i--)
+        if(x+(1<<i)<=n && aib[x+(1<<i)]<s)
+        {
+            s-=aib[x+(1<<i)];
+            x+=1<<i;
+        }
+    return x+1;
+}
+ 
+int main()
+{
+    freopen("klsecv.in", "r", stdin);
+    freopen("klsecv.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        int q,l,k;
+        scanf("%s",sir+1);
+        n=strlen(sir+1),logn=1;
+        for(int i=1;i<=n;i++)
+        {
+            v[i].poz=i;
+            p[0][i]=sir[i];
+        }
+        for(logn;(1<<logn)<=n;logn++);
+        for(int i=1;i<=logn;i++)
+        {
+            for(int j=1;j<=n;j++)
+            {
+                v[j].s1=p[i-1][v[j].poz];
+                if(v[j].poz+(1<<(i-1))<=n) v[j].s2=p[i-1][v[j].poz+(1<<(i-1))];
+                else v[j].s2=-1;
+            }
+            sort(v+1,v+1+n);
+            p[i][v[1].poz]=1;
+            for(int j=2;j<=n;j++)
+                if(v[j]==v[j-1]) p[i][v[j].poz]=p[i][v[j-1].poz];
+                else p[i][v[j].poz]=j;
+        }
+        for(int i=1;i<=n;i++) poz[v[i].poz]=i;
+        scanf("%d",&q);
+        for(int i=1;i<=q;i++)
+        {
+            scanf("%d%d",&l,&sol[i]);
+            v1[l].push_back(i);
+        }
+        for(int i=1;i<=n;i++)
+        {
+            aib_update(poz[i],1);
+            for(vector<int>::iterator it=v1[n-i+1].begin();it!=v1[n-i+1].end();it++)
+                sol[*it]=v[query(sol[*it])].poz;
+        }
+        for(int i=1;i<=q;i++) printf("%d\n",sol[i]);
+        for(int i=1;i<=n;i++)
+        {
+            v1[i].clear();
+            aib[i]=0;
+        }
+    }
+    return 0;
+}
