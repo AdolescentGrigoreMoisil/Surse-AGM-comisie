@@ -1,0 +1,98 @@
+/*
+ * KLSECV
+ *
+ * solutie O( N * log^2 N )
+ *
+ * suffix array + aib
+ *
+ * Teo Ionescu
+ */
+ #include<fstream>
+#include<algorithm>
+#include<cstring>
+#include<vector>
+using namespace std;
+ifstream in("klsecv.in");
+ofstream out("klsecv.out");
+const int Nmax = 100001;
+const int Base = 1097;
+typedef unsigned long long ull;
+ull B[Nmax],Pow[Nmax];
+int T,N,Q,L[Nmax],P[Nmax];
+vector<int> Ls[Nmax];
+int A[Nmax],Ans[Nmax];
+char s[Nmax];
+ull hashxl(int x,int l){
+    return B[x+l-1]-(ull)(B[x-1]*Pow[l]);
+}
+struct log_cmp{
+    inline bool operator() (const int &a,const int &b) const {
+        int i=0,pas=1<<20;
+        while(pas){
+            if(a+i+pas<=N+1 && b+i+pas<=N+1){
+                if(hashxl(a,i+pas)==hashxl(b,i+pas)) i+=pas;
+            }
+            pas>>=1;
+        }
+        return s[a+i]<s[b+i];
+    }
+};
+int lsb(int x){
+    return (x&(-x));
+}
+void update(int x){
+    while(x<=N){
+        A[x]++;
+        x+=lsb(x);
+    }
+}
+int query(int x){
+    if(!x) return 0;
+    int s=0;
+    while(x){
+        s+=A[x];
+        x-=lsb(x);
+    }
+    return s;
+}
+int find(int x){
+    int i=0,pas=1<<20;
+    while(pas){
+        if(i+pas<=N && query(i+pas)<x) i+=pas;
+        pas>>=1;
+    }
+    return i+1;
+}
+int main(){
+    in>>T;
+    for(int test=1;test<=T;test++){
+        in.get();
+        in.getline(s+1,Nmax);
+        N=strlen(s+1);
+        Pow[0]=1;
+        for(int i=1;i<=N;i++){
+            B[i]=(ull)(B[i-1]*Base) + s[i];
+            Pow[i]=(ull)(Pow[i-1]*Base);
+            L[i]=i;
+            Ls[i].clear();
+            A[i]=0;
+        }
+        sort(L+1,L+N+1,log_cmp());
+        for(int i=1;i<=N;i++) P[L[i]]=i;
+        in>>Q;
+        int k,l;
+        for(int i=1;i<=Q;i++){
+            in>>l>>k;
+            Ans[i]=k;
+            Ls[l].push_back(i);
+        }
+        for(int i=1;i<=N;i++){
+            update(P[i]);
+            for(vector<int>::iterator it=Ls[N-i+1].begin();it!=Ls[N-i+1].end();++it){
+                Ans[*it]=L[find(Ans[*it])];
+            }
+        }
+        for(int i=1;i<=Q;i++) out<<Ans[i]<<'\n';
+    }
+    return 0;
+}
