@@ -1,0 +1,102 @@
+/*
+*   AUTOBUZE
+*   Teo Ionescu
+*
+*   OK
+*/
+#include<fstream>
+#include<algorithm>
+#include<vector>
+#include<cstdlib>
+#include<ctime>
+using namespace std;
+ifstream in("autobuze3.in");
+ofstream out("autobuze3.out");
+typedef long long ll;
+const int Nmax = 200001;
+const int Mmax = 400001;
+vector<int> G[Nmax],Tr[Nmax],who[Nmax];
+struct much{
+    int x,y,val;
+    bool operator < (const much &tmp)const{
+        return val<tmp.val;
+    }
+} m[Mmax];
+int tat[Nmax],h[Nmax];
+int aut[Nmax];
+int T,N,M;
+int q(int x){
+    int R,y;
+    for(R=x;R!=tat[R];R=tat[R]);
+    while(x!=R) y=tat[x],tat[x]=R,x=y;
+    return R;
+}
+void dfsh(int x){
+    h[x]=1;
+    for(vector<int>::iterator it=G[x].begin();it!=G[x].end();++it){
+        if(!h[*it]){
+            Tr[x].push_back(*it);
+            tat[*it]=x;
+            dfsh(*it);
+            h[x]+=h[*it];
+        }
+    }
+}
+void dfs(int x,int p){
+    if(Tr[x].size()==0){
+        aut[p]=x;
+        who[p].clear();
+        who[p].push_back(x);
+    }
+    else{
+        int mx=0,j=0;
+        for(vector<int>::iterator it=Tr[x].begin();it!=Tr[x].end();++it){
+            if(h[*it]>mx) mx=h[*it],j=*it;
+        }
+        //j=Tr[x][rand()%Tr[x].size()];
+        dfs(j,p+1);
+        aut[p]=aut[p+1];
+        who[p].clear();
+        for(vector<int>::iterator it=who[p+1].begin();it!=who[p+1].end();++it) who[p].push_back(*it);
+        who[p].push_back(x);
+        out<<"Move "<<x<<" "<<x<<" "<<aut[p]<<"\n";
+        for(vector<int>::iterator it=Tr[x].begin();it!=Tr[x].end();++it){
+            if(*it!=j){
+                dfs(*it,p+1);
+                for(vector<int>::iterator it=who[p+1].begin();it!=who[p+1].end();++it){
+                    out<<"Move "<<*it<<" "<<aut[p+1]<<" "<<aut[p]<<"\n";
+                    who[p].push_back(*it);
+                }
+            }
+        }
+    }
+    if(tat[x]>0){
+        out<<"Drive "<<aut[p]<<" "<<x<<" "<<tat[x]<<"\n";
+    }
+}
+int main(){
+    srand(time(0));
+    in>>T;
+    while(T--){
+        in>>N>>M;
+        for(int i=1;i<=M;i++) in>>m[i].x>>m[i].y>>m[i].val;
+        sort(m+1,m+M+1);
+        for(int i=1;i<=N;i++) tat[i]=i,h[i]=0,G[i].clear(),Tr[i].clear();
+        ll s=0;
+        for(int i=1;i<=M;i++){
+            int xx=q(m[i].x),yy=q(m[i].y);
+            if(xx!=yy){
+                tat[yy]=xx;
+                G[m[i].x].push_back(m[i].y);
+                G[m[i].y].push_back(m[i].x);
+                s+=m[i].val;
+            }
+        }
+        out<<s<<'\n';
+        tat[1]=-1;
+        dfsh(1);
+        dfs(1,1);
+        out<<"Gata\n";
+    }
+    return 0;
+}
