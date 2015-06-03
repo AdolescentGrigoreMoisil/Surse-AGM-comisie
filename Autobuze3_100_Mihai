@@ -1,0 +1,217 @@
+//Nitu Mihai
+//Universitatea din Bucuresti
+ 
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <algorithm>
+#include <cstring>
+#include <cassert>
+ 
+#define maxn 200010
+#define maxm 400010
+ 
+using namespace std;
+ 
+ifstream fin ("autobuze3.in");
+ofstream fout("autobuze3.out");
+ 
+struct edge
+{
+    int a,b,c;
+}e[maxm];
+ 
+bool cmp(edge a, edge b)
+{
+    return a.c < b.c;
+}
+ 
+int f[maxn], d[maxn], sub[maxn], bus[maxn], n, m;
+vector<int> T[maxn];
+vector<int> pigs[maxn];
+long long ans;
+ 
+int parent (int x)
+{
+    if (f[x] != 0)
+    {
+        return f[x] = parent(f[x]);
+    }
+    return x;
+}
+ 
+void unite(edge e)
+{
+    int x = parent(e.a);
+    int y = parent(e.b);
+ 
+    if (x != y)
+    {
+        T[e.a].push_back(e.b);
+        T[e.b].push_back(e.a);
+        ans += e.c;
+        if (d[x] < d[y])
+        {
+            f[x] = y;
+        }
+        else
+        {
+            f[y] = x;
+            if (d[x] == d[y])
+                ++d[x];
+        }
+    }
+}
+ 
+void dfs(int x, int f)
+{
+    bool leaf = 1;
+    sub[x] = 1;
+    int heaviest = 0;
+ 
+    for (int i = 0; i < T[x].size(); ++i)
+    {
+        if (T[x][i] != f)
+        {
+            leaf = 0;
+            dfs(T[x][i], x);
+ 
+            if (sub[T[x][i]] > sub[heaviest])
+            {
+                heaviest = T[x][i];
+            }
+ 
+            sub[x] += sub[T[x][i]];
+        }
+    }
+ 
+    if (leaf)
+    {
+        return;
+    }
+ 
+    for (int i = 0; i < T[x].size(); ++i)
+    {
+        if (T[x][i] != f)
+        {
+           fout << "Drive " << bus[T[x][i]] << " " << T[x][i] << " " << x << "\n";
+        }
+    }
+    bus[x] = bus[heaviest];
+ 
+    for (int i = 0; i < T[x].size(); ++i)
+    {
+        if (T[x][i] != f && T[x][i] != heaviest)
+        {
+            for (int j = 0; j < pigs[bus[T[x][i]]].size(); ++j)
+            {
+                fout << "Move " << pigs[bus[T[x][i]]][j] << " " << bus[T[x][i]] << " " << bus[heaviest] << "\n";
+                pigs[bus[heaviest]].push_back(pigs[bus[T[x][i]]][j]);
+            }
+            pigs[bus[T[x][i]]].clear();
+        }
+    }
+ 
+    fout << "Move " << x << " " << x << " " << bus[heaviest] << "\n";
+    pigs[bus[heaviest]].push_back(x);
+}
+ 
+void solve()
+{
+    fin >> n >> m;
+ 
+    for (int i = 1; i <= m; ++i)
+    {
+        int a,b,c;
+        fin >> a >> b >> c;
+        assert(c >= 0);
+        e[i].a = a;
+        e[i].b = b;
+        e[i].c = c;
+    }
+ 
+    sort (e+1,e+m+1, cmp);
+ 
+    for (int i = 1; i <= m; ++i)
+    {
+        unite(e[i]);
+    }
+ 
+    fout << ans << "\n";
+ 
+    for (int i = 1; i <= n; ++i)
+    {
+        pigs[i].push_back(i);
+        bus[i] = i;
+    }
+ 
+    dfs(1,0);
+}
+ 
+void reset()
+{
+    memset(f, 0, sizeof(f));
+    memset(d, 0, sizeof(d));
+ 
+    for (int i = 1; i <= n; ++i)
+    {
+        pigs[i].clear();
+        T[i].clear();
+    }
+ 
+    ans = 0;
+}
+ 
+int main()
+{
+    int test;
+    fin >> test;
+ 
+    for (;test; --test)
+    {
+        reset();
+        solve();
+        fout << "Gata\n";
+    }
+ 
+   /* ifstream finn("autobuze3.out");
+    ofstream foutt("newtest.out");
+    int test;
+    fin >> test;
+ 
+    for (;test; --test)
+    {
+        int n,m;
+        fin >> n >> m;
+ 
+        for (int i = 1; i <= m; ++i)
+        {
+            int a,b,c;
+            fin >> a >> b >> c;
+        }
+ 
+        int x;
+        finn >> x;
+        foutt << x + (n-1)*1001 << "\n";
+    }*/
+ 
+    /*ofstream foutt("newtest.out");
+ 
+    int test;
+    fin >> test;
+    foutt << test << "\n";
+ 
+    for (;test; --test)
+    {
+        int n,m;
+        fin >> n >> m;
+        foutt << n << " " << m << "\n";
+ 
+        for (int i = 1; i <= m; ++i)
+        {
+            int a,b,c;
+            fin >> a >> b >> c;
+            foutt << a << " " << b << " " << c + 1001 << "\n";
+        }
+    }*/
+}
