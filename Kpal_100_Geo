@@ -1,0 +1,92 @@
+/*
+    George Marcus
+    O(K * SQRT(MAXU) + NlogN + Q*logN)
+*/
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define SQRTU 10005
+#define MAXU 100000005
+ 
+int K, Q, L, R;
+vector<int> P;
+unordered_set<int> S;
+int A[50];
+ 
+bool addPal(int pos, int b, int d = -1) {
+    long long val = 0;
+    long long revVal = 0;
+    for (int i = 0; i < pos; i++) {
+        val = b * val + A[i];
+        revVal = b * revVal + A[pos - 1 - i];
+    }
+    if (d != -1) {
+        val = val * b + d;
+    }
+    for (int i = 0; i < pos; i++) {
+        val *= b;
+    }
+    val += revVal;
+    if (val >= MAXU) {
+        return false;
+    }
+    if (S.count(val) == 0) {
+        S.insert(val);
+        P.push_back(val);
+    }
+    return true;
+}
+ 
+void back(int pos, int val, int b) {
+    addPal(pos, b);
+    for (int d = 0; d < b; d++) {
+        if (!addPal(pos, b, d)) {
+            break;
+        }
+    }
+     
+    for (int d = 0; d < b; d++) {
+        int nval = val * b + d;
+        if (val == 0 && d == 0) {
+            continue;
+        }
+        if (nval >= SQRTU) {
+            break;
+        }
+        A[pos] = d;
+        back(pos + 1, nval, b);
+    }
+}
+ 
+void precalc(int b) {
+    back(0, 0, b);
+}
+ 
+int solve() {
+    int a = upper_bound(P.begin(), P.end(), L - 1) - P.begin() - 1;
+    int b = upper_bound(P.begin(), P.end(), R) - P.begin() - 1;
+    return b - a;
+}
+ 
+int main() {
+    freopen("kpal.in", "r", stdin);
+    freopen("kpal.out","w", stdout);
+     
+    scanf("%d", &K);
+    int b;
+    for (int i = 0; i < K; i++) {
+        scanf("%d", &b);
+        precalc(b);
+    }
+    sort(P.begin(), P.end());
+    scanf("%d", &Q);
+    while (Q--) {
+        scanf("%d %d", &L, &R);
+        int ans = solve();
+        printf("%d\n", ans);
+    }
+     
+    return 0;
+}
