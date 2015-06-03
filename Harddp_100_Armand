@@ -1,0 +1,34 @@
+/*
+ * Code by Preda Armand
+ * C. N. Spiru Haret Bucuresti
+ *
+ * solutie banala
+ */
+#include <fstream>
+
+using namespace std;
+
+ifstream fin("harddp.in");
+ofstream fout("harddp.out");
+
+int main()
+{
+    int t, n, zero=0, unu=0;
+    char c;
+    fin>>t;
+    while(t--)
+    {
+        fin>>n;
+        zero=0, unu=0;
+        for(int i=1; i<=n; ++i)
+        {
+            fin>>c;
+            zero+=(c=='0');
+            unu+=(c=='1');
+        }
+        for(int i=1; i<=n; ++i)
+            fout<<1-(zero<unu);
+        fout<<'\n';
+    }
+    return 0;
+}
