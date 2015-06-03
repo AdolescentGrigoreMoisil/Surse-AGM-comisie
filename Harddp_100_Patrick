@@ -1,0 +1,62 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ *
+ * Expected Score : 100 points
+ **/
+ 
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "harddp.in" ;
+const char OUT [ ] = "harddp.out" ;
+const int MAX = ( 1 << 15 ) + 14 ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( int a = b ; a >= c ; -- a )
+ 
+using namespace std ;
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+int main ( void )
+{
+    int t ;
+    cin >> t ;
+    while ( t -- )
+    {
+        int n ;
+        cin >> n ;
+        int zero0 = 0 ;
+        FORN ( i , 1 , n )
+        {
+            char x ;
+            cin >> x ;
+            zero0 += !(x-'0') ;
+        }
+        int unu0 = n - zero0 ;
+        if ( zero0 <= unu0 )
+            FORN ( i , 1 , n )
+                cout << 0 ;
+        else FORN ( i , 1 , n )
+                cout << 1 ;
+        cout << '\n' ;
+    }
+    return 0;
+}
