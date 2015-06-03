@@ -1,0 +1,197 @@
+/**
+ * Mircea Trifan
+ * Universitatea Bucuresti - Facultatea de Matematica si Informatica
+ **/
+ 
+ 
+ 
+#include <iostream>
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+ 
+using namespace std;
+ 
+const int ValMax = 100000000;
+const int MOD = 666013;
+const int maxbaze = 13;
+int K, Q;
+int baze[maxbaze];
+vector <int> H[MOD];
+int a[400000], na;
+ 
+inline void Insert(const int x)
+{
+    int cod = x % MOD;
+    for (vector <int> :: iterator it = H[cod].begin(); it != H[cod].end(); ++ it)
+        if (*it == x)
+            return ;
+    H[cod].push_back(x);
+}
+ 
+inline int GetNumberInBase10(const int *v, const int nv, const int baza)
+{
+    long long put = 1LL;
+    int ret = 0;
+    for (int i = 1; i <= nv; ++ i)
+    {
+        if (put > ValMax || 1LL * v[i] * put + ret > ValMax)
+            return -1;
+        ret = ret + v[i] * put;
+        put = 1LL * put * baza;
+    }
+    return ret;
+}
+ 
+bool GetNumbers(const int *v, const int baza)
+{
+    int nr[64];
+    int nnr = 0;
+    for (int i = v[0]; i > 0; -- i)
+        nr[++nnr] = v[i];
+    for (int i = 1; i <= v[0]; ++ i)
+        nr[++nnr] = v[i];
+    int x;
+    x = GetNumberInBase10(nr, nnr, baza);
+    if (x != -1)
+        Insert(x);
+    else
+        return true;
+ 
+    nnr = nnr / 2 + 1;
+    for (int i = 1; i <= v[0]; ++ i)
+        nr[++nnr] = v[i];
+ 
+    for (int i = 0; i < baza; ++ i)
+    {
+        nr[v[0] + 1] = i;
+        x = GetNumberInBase10(nr, nnr, baza);
+        if (x != -1)
+            Insert(x);
+        else
+        {
+            return false;
+        }
+    }
+    return false;
+}
+ 
+inline void Plus1(int *v, const int baza)
+{
+    int i = 1;
+    while (v[i] + 1 == baza)
+    {
+        v[i] = 0;
+        ++ i;
+    }
+    ++ v[i];
+    v[0] = max(v[0], i);
+}
+ 
+void GetPalindromes(const int baza)
+{
+    for (int i = 0; i < baza; ++ i)
+        Insert(i);
+    int expmax = 0;
+    long long put = 1;
+    while (put < ValMax)
+    {
+        put = put * baza;
+        ++ expmax;
+    }
+    ++ expmax;
+    int lgmax = expmax / 2 + expmax % 2;
+    int v[64];
+    for (int i = 0; i < 64; ++ i)
+        v[i] = 0;
+    v[0] = 1, v[1] = 1;
+ 
+    bool stop = false;
+    while (v[0] <= lgmax && !stop)
+    {
+        stop = GetNumbers(v, baza);
+        Plus1(v, baza);
+    }
+}
+ 
+void Precalc()
+{
+    for (int i = 1; i <= K; ++ i)
+        GetPalindromes(baze[i]);
+    for (int i = 0; i < MOD; ++ i)
+        for (vector <int> :: iterator it = H[i].begin(); it != H[i].end(); ++ it)
+            a[++na] = *it;
+    sort(a + 1, a + na + 1);
+}
+ 
+inline int Solve(const int X)
+{
+    if (X < 0)
+        return 0;
+    int st = 1, dr = na;
+    int ret = 0;
+    while (st <= dr)
+    {
+        int mij = (st+dr) >> 1;
+        if (a[mij] <= X)
+        {
+            ret = mij;
+            st = mij + 1;
+        }
+        else
+            dr = mij - 1;
+    }
+    return ret;
+}
+ 
+inline bool Palindrome(int x, const int baza)
+{
+    int v[64], nv = 0;
+    while (x)
+    {
+        v[++nv] = x % baza;
+        x /= baza;
+    }
+    for (int st = 1, dr = nv; st <= dr; ++ st, -- dr)
+        if (v[st] != v[dr])
+            return false;
+    return true;
+}
+ 
+inline int _OK(const int x)
+{
+    for (int i = 1; i <= K; ++ i)
+        if (Palindrome(x, baze[i]))
+        {
+            return 1;
+        }
+    return 0;
+}
+ 
+int main()
+{
+    FILE *f = fopen("kpal.in", "r");
+    fscanf (f, "%d", &K);
+    for (int i = 1; i <= K; ++ i)
+        fscanf(f, "%d", &baze[i]);
+    Precalc();
+    fscanf(f, "%d", &Q);
+    FILE *g = fopen("kpal.out", "w");
+ 
+    while (Q -- )
+    {
+        int L, U;
+        fscanf (f, "%d %d", &L, &U);
+        int ans = Solve(U) - Solve(L - 1);
+        fprintf (g, "%d\n", ans);
+    }
+    fclose(f);
+    fclose(g);
+//    int count = 0;
+//    for (int i = 0; i <= 100000000; ++ i)
+//    {
+//        count += _OK(i);
+//    }
+//    cout << count;
+    return 0;
+}
