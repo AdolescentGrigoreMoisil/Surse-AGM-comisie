@@ -1,0 +1,200 @@
+#include <cstdio>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <cassert>
+ 
+using namespace std;
+ 
+const int MaxN=100010;
+vector<int> v[MaxN],g[MaxN];
+pair<int,pair<int,int> > maxx[MaxN];
+map<int,int> d[MaxN];
+int first[MaxN],last[MaxN],size[MaxN],val[MaxN],n,nr;
+int lant[MaxN],poz_lant[MaxN],size_lant[MaxN],tata_lant[MaxN],nr_lant;
+int dpoz[MaxN],v1[MaxN],v2[MaxN],v3[MaxN],dnr,k;
+long long aib[MaxN],sol=0;
+char bagat[MaxN],vaz[MaxN];
+ 
+void dfs1(int nod)
+{
+    first[nod]=++nr;
+    size[nod]=1;
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+    {
+        dfs1(*it);
+        size[nod]+=size[*it];
+    }
+    last[nod]=nr;
+}
+ 
+void dfs2(int nod,int l)
+{
+    lant[nod]=l;
+    poz_lant[nod]=++size_lant[l];
+    int heavy=0;
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(size[*it]>size[heavy]) heavy=*it;
+    if(!heavy) return;
+    dfs2(heavy,l);
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+        if(*it!=heavy)
+        {
+            nr_lant++;
+            tata_lant[nr_lant]=nod;
+            dfs2(*it,nr_lant);
+        }
+}
+ 
+void aib_update(int i,int s)
+{
+    for(;i<=n;i+=i&(-i)) aib[i]+=s;
+}
+ 
+long long aib_query(int i)
+{
+    long long s=0;
+    for(;i>0;i-=i&(-i)) s+=aib[i];
+    return s;
+}
+ 
+int cmp(int a,int b)
+{
+    return first[a]<first[b];
+}
+ 
+int get_lcas_graph(int nr,int v1[])
+{
+    for(int i=1;i<=nr;i++)
+    {
+        int nod=v1[i],l=lant[nod];
+        while(nod)
+        {
+            if(poz_lant[nod]>maxx[lant[nod]].first) maxx[lant[nod]]={poz_lant[nod],{l,l}};
+            else if(poz_lant[nod]==maxx[lant[nod]].first && l!=maxx[lant[nod]].second.first) maxx[lant[nod]].second.second=l;
+            l=lant[nod];
+            nod=tata_lant[lant[nod]];
+        }
+    }
+    int nr2=0,nr3=0;
+    for(int i=1;i<=nr;i++)
+        for(int nod=v1[i];nod;nod=tata_lant[lant[nod]])
+            if(!bagat[nod] && (poz_lant[nod]<maxx[lant[nod]].first || maxx[lant[nod]].second.first!=maxx[lant[nod]].second.second))
+            {
+                v2[++nr2]=nod;
+                bagat[nod]=1;
+            }
+    for(int i=1;i<=nr;i++)
+        if(!bagat[v1[i]]) v2[++nr2]=v1[i];
+    for(int i=1;i<=nr;i++)
+        for(int nod=v1[i];nod;nod=tata_lant[lant[nod]])
+        {
+            maxx[lant[nod]]={0,{0,0}};
+            bagat[nod]=0;
+        }
+    sort(v2+1,v2+1+nr2,cmp);
+    v3[++nr3]=v2[1];
+    for(int i=2;i<=nr2;i++)
+    {
+        while(last[v3[nr3]]<first[v2[i]]) nr3--;
+        g[v3[nr3]].push_back(v2[i]);
+        v3[++nr3]=v2[i];
+    }
+    return v2[1];
+}
+ 
+void solve_dfs(int nod)
+{
+    size[nod]=1;
+    int heavy=0;
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+    {
+        solve_dfs(*it);
+        size[nod]+=size[*it];
+        if(size[*it]>size[heavy]) heavy=*it;
+    }
+    if(!heavy) dpoz[nod]=++dnr;
+    else dpoz[nod]=dpoz[heavy];
+    int s=aib_query(first[nod])%k;
+    if(vaz[nod])
+    {
+        sol+=d[dpoz[nod]][s];
+        d[dpoz[nod]][s]++;
+    }
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+        if(*it!=heavy)
+        {
+            for(map<int,int>::iterator it1=d[dpoz[*it]].begin();it1!=d[dpoz[*it]].end();it1++)
+                if(d[dpoz[nod]].count((2LL*s-it1->first+k)%k)) sol+=1LL*it1->second*d[dpoz[nod]][(2LL*s-it1->first+k)%k];
+            for(map<int,int>::iterator it1=d[dpoz[*it]].begin();it1!=d[dpoz[*it]].end();it1++)
+                d[dpoz[nod]][it1->first]+=it1->second;
+        }
+}
+ 
+void dfs_clear(int nod)
+{
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+        dfs_clear(*it);
+    g[nod].clear();
+    d[dpoz[nod]].clear();
+}
+ 
+int main()
+{
+    freopen("hardtask.in", "r", stdin);
+    freopen("hardtask.out", "w", stdout);
+    int m,x,suma=0;
+    scanf("%d%d",&n,&m);
+    assert(1<=n && n<=100000);
+    assert(1<=m && m<=100000);
+    for(int i=2;i<=n;i++)
+    {
+        scanf("%d%d",&x,&val[i]);
+        assert(1<=x && x<=n);
+        assert(0<=val[i] && val[i]<=1000000000);
+        v[x].push_back(i);
+    }
+    dfs1(1);
+    dfs2(1,++nr_lant);
+    for(int i=2;i<=n;i++)
+    {
+        aib_update(first[i],val[i]);
+        aib_update(last[i]+1,-val[i]);
+    }
+    for(;m;m--)
+    {
+        int tip,nod,s,nr;
+        scanf("%d",&tip);
+        assert(tip==1 || tip==2);
+        if(tip==1)
+        {
+            scanf("%d%d",&nod,&s);
+            assert(1<=nod && nod<=n);
+            assert(0<=s && s<=1000000000);
+            aib_update(first[nod],s-val[nod]);
+            aib_update(last[nod]+1,val[nod]-s);
+            val[nod]=s;
+        }
+        else
+        {
+            scanf("%d%d",&nr,&k);
+            assert(1<=k && k<=1000000000);
+            suma+=nr;
+            for(int i=1;i<=nr;i++)
+            {
+                scanf("%d",&v1[i]);
+                assert(1<=v1[i] && v1[i]<=n);
+                assert(!vaz[v1[i]]);
+                vaz[v1[i]]=1;
+            }
+            int rad=get_lcas_graph(nr,v1);
+            sol=dnr=0;
+            solve_dfs(rad);
+            dfs_clear(rad);
+            for(int i=1;i<=nr;i++) vaz[v1[i]]=0;
+            printf("%lld\n",sol);
+        }
+    }
+    assert(suma<=100000);
+    return 0;
+}
