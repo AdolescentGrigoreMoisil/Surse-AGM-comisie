@@ -1,0 +1,106 @@
+#include <cstdio>
+#include <vector>
+#include <queue>
+#include <cassert>
+ 
+using namespace std;
+ 
+const int MaxN=210,MaxNr=810,inf=1000000000;
+struct str
+{
+    int st,dr,nr;
+}v[MaxN];
+vector<int> g[MaxNr];
+queue<int> q;
+int cap[MaxNr][MaxNr],flow[MaxNr][MaxNr],tata[MaxNr],sursa,dest,n,m;
+char vaz[MaxNr];
+ 
+void add_edge(int x,int y,int c=0)
+{
+    g[x].push_back(y);
+    g[y].push_back(x);
+    cap[x][y]=c;
+}
+ 
+int bfs()
+{
+    for(int i=sursa;i<=dest;i++) vaz[i]=0;
+    vaz[sursa]=1;
+    q.push(sursa);
+    while(!q.empty())
+    {
+        int nod=q.front();q.pop();
+        for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+            if(!vaz[*it] && cap[nod][*it]>flow[nod][*it])
+            {
+                tata[*it]=nod;
+                vaz[*it]=1;
+                if(*it!=dest) q.push(*it);
+            }
+    }
+    return vaz[dest];
+}
+ 
+int flux(int dezmax)
+{
+    for(int i=sursa;i<=dest;i++)
+        for(vector<int>::iterator it=g[i].begin();it!=g[i].end();it++) flow[i][*it]=0;
+    for(int i=1;i<=n;i++)
+    {
+        cap[i][n+2*i-1]=min(v[i].st,(v[i].nr+dezmax)/2);
+        cap[i][n+2*i]=min(v[i].dr,(v[i].nr+dezmax)/2);
+    }
+    int sol=0;
+    while(bfs())
+        for(vector<int>::iterator it=g[dest].begin();it!=g[dest].end();it++)
+            if(cap[*it][dest]>flow[*it][dest])
+            {
+                tata[dest]=*it;
+                int s=inf;
+                for(int i=dest;i!=sursa;i=tata[i]) s=min(s,cap[tata[i]][i]-flow[tata[i]][i]);
+                for(int i=dest;i!=sursa;i=tata[i])
+                {
+                    flow[tata[i]][i]+=s;
+                    flow[i][tata[i]]-=s;
+                }
+                sol+=s;
+            }
+    return sol;
+}
+ 
+int main()
+{
+    freopen("mingiute.in", "r", stdin);
+    freopen("mingiute.out", "w", stdout);
+    int sum=0;
+    scanf("%d%d",&n,&m);
+    assert(1<=n && n<=200);
+    assert(1<=m && m<=200);
+    for(int i=1;i<=n;i++)
+    {
+        scanf("%d%d%d",&v[i].st,&v[i].dr,&v[i].nr);
+        assert(0<=v[i].nr && v[i].nr<=m);
+        assert(v[i].st<=m-v[i].dr);
+    }
+    sursa=0;dest=3*n+m+1;
+    for(int i=1;i<=n;i++)
+    {
+        sum+=v[i].nr;
+        add_edge(sursa,i,v[i].nr);
+        add_edge(i,n+2*i-1);
+        add_edge(i,n+2*i);
+        for(int j=1;j<=v[i].st;j++) add_edge(n+2*i-1,3*n+j,1);
+        for(int j=m;j>m-v[i].dr;j--) add_edge(n+2*i,3*n+j,1);
+    }
+    for(int i=1;i<=m;i++) add_edge(3*n+i,dest,1);
+    int st=0,dr=m;
+    while(st<=dr)
+    {
+        int mid=(st+dr)/2;
+        if(flux(mid)==sum) dr=mid-1;
+        else st=mid+1;
+    }
+    if(st==m+1) printf("-1");
+    else printf("%d",st);
+    return 0;
+}
