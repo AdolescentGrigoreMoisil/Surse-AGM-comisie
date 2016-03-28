@@ -1,0 +1,60 @@
+/*
+ * George Marcus
+ * O(N)
+ */
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define INF (long long) 1e16
+#define MAXN 200050
+ 
+int N;
+string S;
+long long sumW[MAXN];
+ 
+int main() {
+    assert(freopen("weeee.in", "r", stdin));
+    assert(freopen("weeee.out", "w", stdout));
+    cin.sync_with_stdio(false);
+ 
+    cin >> N;
+    cin >> S;
+ 
+    if (S.find('W') == string::npos || S.find('E') == string::npos) {
+        cout << -1 << endl;
+        return 0;
+    }
+ 
+    int W = 0;
+    int E = 0;
+    for (int i = 0; i < N; i++) {
+        if (S[i] == 'W') {
+            sumW[W] = i;
+            if (W > 0) {
+                sumW[W] += sumW[W - 1];
+            }
+            W++;
+        } else {
+            E++;
+        }
+    }
+ 
+    long long ans = INF;
+    int len = E;
+    for (int i = 1; i <= W && i + len - 1 + W - i < N; i++) {
+        long long leftCount = sumW[i - 1] - (long long) i * (i - 1) / 2;
+ 
+        long long r = W - i;
+        long long rightCount = N * r - r * (r + 1) / 2;
+        rightCount -= sumW[W - 1] - sumW[i - 1];
+         
+        long long total = leftCount + rightCount;
+        ans = min(ans, total);
+    }
+ 
+    cout << ans << endl;
+ 
+    return 0;
+}
