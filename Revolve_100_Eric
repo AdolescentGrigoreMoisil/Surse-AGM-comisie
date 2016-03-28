@@ -1,0 +1,147 @@
+#include <bits/stdc++.h>
+ 
+using std::cerr;
+ 
+ 
+#define x first
+#define y second
+ 
+const int MAX_N = 1e5 + 10;
+const int MAX_M = 1e5 + 10;
+ 
+std::ifstream in("revolve.in");
+std::ofstream out("revolve.out");
+ 
+typedef std::pair<int, int> pii;
+ 
+int TT[MAX_N];
+int n, m;
+struct query {
+  int a, b, l;
+} q[MAX_M];
+bool viz[MAX_N];
+int deg[MAX_N];
+std::vector<int> G[MAX_N];
+std::vector<pii> must[MAX_N];
+int Q[MAX_N];
+bool ok;
+int parent[MAX_N];
+ 
+void reset() {
+  for(int i = 1; i <= n; ++i) {
+    deg[i] = 0;
+    TT[i] = i;
+    parent[i] = -1;
+    G[i].clear();
+    must[i].clear();
+  }
+  ok = 1;
+}
+ 
+void topoSort() {
+  for(int i = 1;i <= n; ++i) {
+    for(auto e: G[i])
+      deg[e]++;
+  }
+ 
+  Q[0] = 0;
+  for(int i = 1; i <= n; ++i)
+    if(deg[i] == 0)
+      Q[++Q[0]] = i;
+ 
+  for(int i = 1; i <= Q[0]; ++i) {
+    int now = Q[i];
+    for(auto e: G[now]) {
+      deg[e]--;
+      if(deg[e] == 0)
+        Q[++Q[0]] = e;
+    }
+  }
+ 
+  if(Q[0] != n) {
+    ok = 0;
+    return;
+  }
+}
+ 
+int find(int node) {
+  if(TT[node] == node)
+    return node;
+  TT[node] = find(TT[node]);
+  return TT[node];
+}
+ 
+void unite(int x, int y) {
+  x = find(x);
+  y = find(y);
+ 
+  TT[x] = parent[x] = y;
+//  cerr << "parent[" << x << "] -> " << y << "\n";
+}
+ 
+void handle(int node) {
+  for(auto m: must[node]) {
+    if(find(m.x) == find(m.y) && find(m.x) != node) {
+    //the two restrictions already have an LCA
+    //different from node
+      ok = 0;
+      return;
+    }
+    unite(m.x, node);
+    unite(m.y, node);
+  }
+}
+ 
+void solve() {
+  in >> n >> m;
+  reset();
+ 
+  for(int i = 1; i <= m; ++i) {
+    in >> q[i].a >> q[i].b >> q[i].l;
+ 
+    if(q[i].a != q[i].l)
+      G[q[i].l].push_back(q[i].a);
+    if(q[i].b != q[i].l)
+      G[q[i].l].push_back(q[i].b);
+ 
+    must[q[i].l].push_back(std::make_pair(q[i].a, q[i].b));
+  }
+ 
+  topoSort();
+  if(!ok) {
+    out << "-1\n";
+    return;
+  }
+ 
+  for(int i = n; i >= 1; --i) {
+//    cerr << "handling " << Q[i] << "\n";
+    handle(Q[i]);
+    if(!ok) {
+//      cerr << "not ok!\n";
+      out << "-1\n";
+      return;
+    }
+  }
+ 
+  int root = Q[1];
+ 
+  for(int i = 1; i <= n; ++i) {
+    if(find(i) != find(root))
+      unite(i, root);
+  }
+ 
+  out << root << "\n";
+ 
+  for(int i = 1; i <= n; ++i) {
+    if(i != root)
+      out << parent[i] << " " << i << "\n";
+  }
+}
+ 
+int main() {
+  int T;
+  in >> T;
+  while(T--)
+    solve();
+  return 0;
+}
