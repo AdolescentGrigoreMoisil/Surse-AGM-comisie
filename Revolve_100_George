@@ -1,0 +1,99 @@
+#include <cstdio>
+#include <vector>
+#include <cassert>
+ 
+using namespace std;
+ 
+vector<int> v[100010];
+vector<pair<int,int> > v1[100010];
+int rad[100010],tata[100010],grad[100010],q[100010],suma1,suma2;
+ 
+int radacina(int nod)
+{
+    int i,j=nod;
+    for(i=nod;i!=rad[i];i=rad[i]);
+    while(j!=i)
+    {
+        int aux=rad[j];
+        rad[j]=i;
+        j=aux;
+    }
+    return i;
+}
+ 
+void uneste(int a,int b)
+{
+    a=radacina(a);
+    b=radacina(b);
+    rad[a]=tata[a]=b;
+}
+ 
+void solve()
+{
+    int n,m,a,b,c,nr=0;
+    scanf("%d%d",&n,&m);
+    suma1+=n;
+    suma2+=m;
+    assert(1<=n && n<=100000);
+    assert(1<=m && m<=100000);
+    for(int i=1;i<=m;i++)
+    {
+        scanf("%d%d%d",&a,&b,&c);
+        assert(1<=a && a<=n);
+        assert(1<=b && b<=n);
+        assert(1<=c && c<=n);
+        if(a!=c) {v[c].push_back(a);grad[a]++;}
+        if(b!=c) {v[c].push_back(b);grad[b]++;}
+        v1[c].push_back({a,b});
+    }
+    for(int i=1;i<=n;i++)
+        if(!grad[i]) q[++nr]=i;
+    for(int i=1;i<=nr;i++)
+        for(vector<int>::iterator it=v[q[i]].begin();it!=v[q[i]].end();it++)
+            if(--grad[*it]==0) q[++nr]=*it;
+    if(nr<n)
+    {
+        printf("-1\n");
+        goto label;
+    }
+    for(int i=1;i<=n;i++) rad[i]=i;
+    for(int i=nr;i;i--)
+    {
+        for(vector<pair<int,int> >::iterator it=v1[q[i]].begin();it!=v1[q[i]].end();it++)
+            if(radacina(it->first)==radacina(it->second) && radacina(it->first)!=radacina(q[i]))
+            {
+                printf("-1\n");
+                goto label;
+            }
+        for(vector<pair<int,int> >::iterator it=v1[q[i]].begin();it!=v1[q[i]].end();it++)
+        {
+            uneste(it->first,q[i]);
+            uneste(it->second,q[i]);
+        }
+    }
+    for(int i=1;i<=n;i++)
+        if(radacina(i)!=q[1]) uneste(i,q[1]);
+    printf("%d\n",q[1]);
+    for(int i=1;i<=n;i++)
+        if(i!=q[1]) printf("%d %d\n",i,tata[i]);
+    label:
+    for(int i=1;i<=n;i++)
+    {
+        grad[i]=0;
+        v[i].clear();
+        v1[i].clear();
+    }
+}
+ 
+int main()
+{
+    freopen("revolve.in", "r", stdin);
+    freopen("revolve.out", "w", stdout);
+    int t;
+    scanf("%d",&t);
+    assert(1<=t && t<=25);
+    for(;t;t--) solve();
+    assert(suma1<=500000);
+    assert(suma2<=500000);
+    return 0;
+}
