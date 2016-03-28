@@ -1,0 +1,143 @@
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <cassert>
+ 
+using namespace std;
+ 
+#define MAXN 100005
+ 
+bool Viz[MAXN];
+int Link[MAXN], Parent[20][MAXN], Depth[MAXN];
+vector<int> Down[MAXN];
+int n;
+ 
+struct Query {
+    int a, b, r;
+} Queries[MAXN];
+ 
+int Find(int x) {
+    if(Link[x])
+        return Link[x] = Find(Link[x]);
+    return x;
+}
+ 
+void Union(int x, int y) {
+    Link[x] = Parent[0][x] = y;
+}
+ 
+void Solve(int node) {
+    if(Viz[node]) return;
+    Viz[node] = 1;
+ 
+    for(auto x : Down[node])
+        Solve(x);
+ 
+    for(auto x : Down[node])
+        if(Find(x) != Find(node))
+            Union(Find(x), Find(node));
+}
+ 
+int getDepth(int a) {
+    if(Depth[a] || Parent[0][a] == 0)
+        return Depth[a];
+    return Depth[a] = getDepth(Parent[0][a]) + 1;
+}
+ 
+int getLCA(int a, int b) {
+    int delta = getDepth(a) - getDepth(b);
+    if(delta < 0) {
+        swap(a, b);
+        delta = -delta;
+    }
+ 
+    for(int i = 0; (1 << i) <= delta; ++i) {
+        if(delta & (1 << i))
+            a = Parent[i][a];
+    }
+ 
+    if(a == b)
+        return a;
+ 
+    for(int i = 19; i >= 0; --i) {
+        if(Parent[i][a] != Parent[i][b]) {
+            a = Parent[i][a];
+            b = Parent[i][b];
+        }
+    }
+ 
+    return Parent[0][a];
+}
+ 
+void Reset() {
+    for(int i = 1; i <= n; ++i) {
+        Link[i] = Depth[i] = Parent[0][i] = Viz[i] = 0;
+        Down[i].clear();
+    }
+ 
+    for(int i = 1; i < 20; ++i)
+    for(int j = 1; j <= n; ++j) {
+        Parent[i][j] = 0;
+    }
+}
+ 
+int main() {
+ 
+    ifstream fin("revolve.in");
+    ofstream fout("revolve.out");
+ 
+    int t;
+    fin >> t;
+ 
+    while(t--) {
+ 
+        int m, a, b, c;
+        fin >> n >> m;
+ 
+        Reset();
+ 
+        for(int i = 1; i <= m; ++i) {
+            fin >> a >> b >> c;
+            Queries[i] = (Query) {a, b, c};
+            Down[c].push_back(a);
+            Down[c].push_back(b);
+        }
+ 
+        for(int i = 1; i <= n; ++i) {
+            Solve(i);
+        }
+ 
+        for(int i = 1; i <= n; ++i) {
+            if(Find(i) != Find(1))
+                Union(Find(i), Find(1));
+        }
+ 
+        for(int i = 1; i < 20; ++i) {
+            for(int j = 1; j <= n; ++j) {
+                Parent[i][j] = Parent[i-1][Parent[i-1][j]];
+            }
+        }
+ 
+        bool bad = 0;
+        for(int i = 1; i <= m; ++i) {
+            if(getLCA(Queries[i].a, Queries[i].b) != Queries[i].r) {
+                fout << -1 << '\n';
+                bad = 1;
+                break;
+            }
+        }
+ 
+        if(bad) continue;
+ 
+        fout << Find(1) << '\n';
+        for(int i = 1; i <= n; ++i) {
+            if(Parent[0][i]) {
+                fout << i << " " << Parent[0][i] << '\n';
+            }
+        }
+ 
+    }
+ 
+ 
+    return 0;
+}
