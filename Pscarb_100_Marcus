@@ -1,0 +1,28 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+int N, K;
+ 
+int main() {
+    assert(freopen("pscarb.in", "r", stdin));
+    assert(freopen("pscarb.out", "w", stdout));
+    cin.sync_with_stdio(false);
+ 
+    cin >> N >> K;
+    assert(2 <= K && K <= N && N <= 100);
+ 
+    if (K > 2 || N % 2 == 0) {
+        cout << -1 << endl;
+    } else {
+        for (int i = 1; i + 1 <= N; i++) {
+            cout << i << ' ' << i + 1 << '\n';
+        }
+        string colors(N, 'B');
+        colors[0] = 'R';
+        colors[1] = 'G';
+        cout << colors << endl;
+    }
+ 
+    return 0;
+}
