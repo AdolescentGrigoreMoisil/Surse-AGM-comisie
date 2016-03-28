@@ -1,0 +1,125 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "arcas.in" ;
+const char OUT [ ] = "arcas.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 1e5 + 14 ;
+ 
+vector < pair < int , int > > gr [ MAX * 2 ] ;
+ 
+struct aint_persistent
+{
+    int st ;
+    int dr ;
+    int suma ;
+};
+ 
+aint_persistent T [ MAX * 45 ] ;
+ 
+const int VALUE = 1e5 + 3 ;
+ 
+int roots [ MAX * 2 ] ;
+int noduri ;
+ 
+int creaza ( int nod )
+{
+    ++ noduri ;
+    T [ noduri ] = T [ nod ] ;
+    return noduri ;
+}
+ 
+inline int update ( int nod , int st , int dr , int pos , int val )
+{
+    nod = creaza( nod ) ;
+    if ( st == dr )
+    {
+        T [ nod ].suma += val ;
+        return nod ;
+    }
+    int mij = ( st + dr ) >> 1 ;
+    if ( pos <= mij ) {
+        T [ nod ].st = update ( T [ nod ].st , st , mij , pos , val ) ;
+    }
+    else {
+        T [ nod ].dr = update ( T [ nod ].dr , mij + 1 , dr , pos , val ) ;
+    }
+    T [ nod ].suma = T [ T [ nod ].st ].suma + T [ T [ nod ].dr ].suma ;
+    return nod ;
+}
+ 
+int Q ( int nod , int st , int dr , int a , int b )
+{
+    if ( a <= st and dr <= b ) {
+        return T [ nod ].suma ;
+    }
+    int cate = 0 ;
+    int mij = ( st + dr ) >> 1 ;
+    if ( a <= mij ) {
+        cate = cate + Q ( T [ nod ].st , st , mij , a , b ) ;
+    }
+    if ( b > mij ) {
+        cate = cate + Q ( T [ nod ].dr , mij + 1 , dr , a , b ) ;
+    }
+    return cate ;
+}
+ 
+int main ( void )
+{
+    int n , m ;
+    cin >> n >> m ;
+    FORN ( i , 1 , n ) {
+        int a , b , c ;
+        cin >> a >> b >> c ;
+        b += VALUE ;
+        c += VALUE ;
+        gr [ a ].pb ( { b - a , c - a } ) ;
+    }
+    FORN ( i , 1 , 200014 ) {
+        roots [ i ] = roots [ i - 1 ] ;
+        for ( auto x : gr [ i ] ) {
+            roots [ i ] = update ( roots [ i ] , 1 , VALUE * 2 , x.first , +1 ) ;
+            roots [ i ] = update ( roots [ i ] , 1 , VALUE * 2 , x.second + 1 , -1 ) ;
+        }
+        //cout << noduri << '\n' ;
+    }
+    while ( m -- )
+    {
+        int x , y , r ;
+        cin >> x >> y >> r ;
+        //cout << x << ' ' << y << ' ' << r << '\n' ;
+        y += VALUE ;
+        y -= x ;
+        cout << Q ( roots [ x + r ] , 1 , VALUE * 2 , 1 , y ) - Q ( roots [ x - 1 ] , 1 , VALUE * 2 , 1 , y ) << '\n' ;
+    }
+ 
+    return 0;
+}
