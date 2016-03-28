@@ -1,0 +1,144 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "shukarime.in" ;
+const char OUT [ ] = "shukarime.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 1e6 + 14 ;
+ 
+const int MODULO [ ] = { 2000000033 , 1000000021 , 1000000009 , 1000000123 , 1000000007 } ;
+ 
+int MA , MB ;
+int puta [ MAX ] ;
+int putb [ MAX ] ;
+ 
+const int PUT = 14142329 ;
+ 
+bool viz [ MAX ] ;
+ 
+int nr_prime ;
+int prime [ MAX ] ;
+ 
+map < pair < int , int > , int > H ;
+ 
+int fv [ MAX ] ;
+ 
+inline void afis ( pair < long long , long long > & a )
+{
+    cout << a.first << ' ' << a.second << '\n' ;
+}
+ 
+int main()
+{
+    srand ( time ( 0 ) ) ;
+    MA = MODULO [ rand ( ) % 5 ] ;
+    MB = MODULO [ rand ( ) % 5 ] ;
+    while ( MB == MA ){
+        MB = MODULO [ rand ( ) % 5 ] ;
+    }
+    for ( int i = 2 ; i <= 1000 ; ++ i )
+        if ( viz [ i ] == 0 ) {
+            ++ nr_prime ;
+            prime [ nr_prime ] = i ;
+            for ( int j = i + i ; j <= 1000 ; j += i ) {
+                viz [ j ] = 1 ;
+            }
+        }
+    puta [ 0 ] = 1 ;
+    putb [ 0 ] = 1 ;
+    for ( int i = 1 ; i <= 1000000 ; ++ i ) {
+        puta [ i ] = 1LL * puta [ i - 1 ] * PUT % MA ;
+        putb [ i ] = 1LL * putb [ i - 1 ] * PUT % MB ;
+    }
+    int t ;
+    cin >> t ;
+    while ( t -- )
+    {
+        H.clear ( ) ;
+        int n , p ;
+        cin >> n >> p ;
+        pair < long long , long long > init = mp ( 0 , 0 ) ;
+        H [ init ] = 1 ;
+        long long polya = 0 ;
+        long long polyb = 0 ;
+        long long result = 0 ;
+        for ( int i = 1 ; i <= n ; ++ i ){
+            int x ;
+            cin >> x ;
+            int d = 1 ;
+            while ( d <= nr_prime and 1LL * prime [ d ] * prime [ d ] <= x ) {
+                while ( x % prime [ d ] == 0 ) {
+                    x /= prime [ d ] ;
+                    ++ fv [ prime [ d ] ] ;
+                    polya = ( polya + puta [ prime [ d ] ] ) % MA ;
+                    polyb = ( polyb + putb [ prime [ d ] ] ) % MB ;
+                    if ( fv [ prime [ d ] ] == p ) {
+                        polya = polya - 1LL * puta [ prime [ d ] ] * p % MA ;
+                        polya %= MA ;
+                        polya += MA ;
+                        polya %= MA ;
+                        polyb = polyb - 1LL * putb [ prime [ d ] ] * p % MB ;
+                        polyb %= MB ;
+                        polyb += MB ;
+                        polyb %= MB ;
+                        fv [ prime [ d ] ] = 0 ;
+                    }
+                }
+                ++ d ;
+            }
+            if ( x > 1 ) {
+                ++ fv [ x ] ;
+                polya = ( polya + puta [ x ] ) % MA ;
+                polyb = ( polyb + putb [ x ] ) % MB ;
+                if ( fv [ x ] == p ) {
+                    polya = polya - 1LL * puta [ x ] * p % MA ;
+                    polya %= MA ;
+                    polya += MA ;
+                    polya %= MA ;
+                    polyb = polyb - 1LL * putb [ x ] * p % MB ;
+                    polyb %= MB ;
+                    polyb += MB ;
+                    polyb %= MB ;
+                    fv [ x ] = 0 ;
+                }
+            }
+            init = mp ( polya , polyb ) ;
+            result = result + H [ init ] ;
+            H [ init ] ++ ;
+            //afis ( init ) ;
+        }
+        for ( int i = 1 ; i <= 1000000 ; ++ i ) {
+            fv [ i ] = 0 ;
+        }
+        cout << result << '\n' ;
+    }
+    return 0;
+}
