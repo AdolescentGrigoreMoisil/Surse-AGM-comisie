@@ -1,0 +1,69 @@
+/*
+ * George Marcus
+ * O(G^2 * logG + NlogN)
+ */
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define MAXN 36500
+#define MAXG 3005
+ 
+int N, G;
+vector<int> profitsForWeight[MAXG];
+int W[MAXN];
+int P[MAXN];
+int dp[MAXG];
+ 
+int knapsack() {
+    for (int i = 0; i < N; i++) {
+        for (int g = G - W[i]; g >= 0; g--) {
+            dp[g + W[i]] = max(dp[g + W[i]], dp[g] + P[i]);
+        }
+    }
+    int vmax = 0;
+    for (int g = 0; g <= G; g++) {
+        vmax = max(vmax, dp[g]);
+    }
+    return vmax;
+}
+ 
+int main() {
+    assert(freopen("ruksak.in", "r", stdin));
+    assert(freopen("ruksak.out", "w", stdout));
+    cin.sync_with_stdio(false);
+ 
+    cin >> N >> G;
+    int w, p;
+    for (int i = 0; i < N; i++) {
+        cin >> w >> p;
+        profitsForWeight[w].push_back(p);
+    }
+ 
+    for (int g = 0; g <= G; g++) {
+        sort(profitsForWeight[g].rbegin(), profitsForWeight[g].rend());
+    }
+ 
+    int ans = accumulate(profitsForWeight[0].begin(), profitsForWeight[0].end(), 0);
+ 
+    N = 0;
+    for (int g = 1; g <= G; g++) {
+        int currentTotal = 0;
+ 
+        for (int p : profitsForWeight[g]) {
+            if (currentTotal + g <= G) {
+                currentTotal += g;
+                W[N] = g;
+                P[N] = p;
+                N++;
+            }
+        }
+    }
+ 
+    ans += knapsack();
+ 
+    cout << ans << endl;
+ 
+    return 0;
+}
