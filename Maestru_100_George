@@ -1,0 +1,42 @@
+#include <cstdio>
+#include <algorithm>
+#include <cassert>
+ 
+using namespace std;
+ 
+int v[5010];
+ 
+int main()
+{
+    freopen("maestru.in", "r", stdin);
+    freopen("maestru.out", "w", stdout);
+    int t;
+    scanf("%d",&t);
+    assert(1<=t && t<=4000);
+    for(;t;t--)
+    {
+        int n,p,sol=0;
+        scanf("%d%d",&n,&p);
+        assert(1<=n && n<=5000);
+        assert(3<=p && p<=1000000000);
+        for(int i=1;i<=n;i++)
+        {
+            scanf("%d",&v[i]);
+            assert(1<=v[i] && v[i]<=1000000000);
+        }
+        int a=v[1],b,i;
+        if(v[2]-v[1]<p) {b=v[2];i=3;}
+        else {b=v[1]+p-1;i=2;sol=1;}
+        for(;i<=n;i++)
+        {
+            int x1=(v[i]-a-1)/p,x2=(v[i]-b-1)/p;
+            sol+=x1+x2;
+            a=min(a+x1*p,v[i]-1);
+            b=min(b+x2*p,v[i]-1);
+            a=max(a,b);
+            b=v[i];
+        }
+        printf("%d\n",sol);
+    }
+    return 0;
+}
