@@ -1,0 +1,35 @@
+/*
+problema MAESTRU
+SOLUTIE
+teoionescu
+*/
+#include<fstream>
+using namespace std;
+ifstream in("maestru.in");
+ofstream out("maestru.out");
+const int Nmax = 5001;
+int T,N,P,v[Nmax];
+int main(){
+    in>>T;
+    while(T--){
+        in>>N>>P;
+        for(int i=1;i<=N;i++) in>>v[i];
+        int a,b,s,i;
+        if(v[2]-v[1] < P) a=v[1],b=v[2],s=0,i=3;
+        if(v[2]-v[1] == P) a=v[2]-1,b=v[2],s=1,i=3;
+        if(v[2]-v[1] > P) a=v[1]+P-1,b=v[1]+P,s=2,i=2;
+        for(;i<=N;i++){
+            if( a < v[i]-P || b < v[i]-P ){
+                int sa=0,sb=0;
+                if(a < v[i]-P) sa=(v[i]-P-a-1)/P+1;
+                if(b < v[i]-P) sb=(v[i]-P-b-1)/P+1;
+                a+=sa*P,b+=sb*P;
+                s+=sa,s+=sb;
+            }
+            if(a<b) a=v[i];
+            else b=v[i];
+        }
+        out<<s<<'\n';
+    }
+    return 0;
+}
