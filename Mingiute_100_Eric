@@ -1,0 +1,193 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int MAX_N = 200 + 10;
+const int MAX_M = 200 + 10;
+const int MAX_K = MAX_N + MAX_M + 3 * MAX_N;
+const int INF = (1 << 30) - 1;
+ 
+int n, m;
+ 
+int st[MAX_N];
+int dr[MAX_N];
+int nr[MAX_N];
+ 
+int C[MAX_K][MAX_K];
+int F[MAX_K][MAX_K];
+ 
+bool viz[MAX_K];
+int TT[MAX_K];
+ 
+vector<int> G[MAX_K];
+ 
+int flow;
+int req;
+ 
+void clear() {
+  memset(F, 0, sizeof(F));
+  flow = 0;
+}
+ 
+const int S = 0;
+const int T = MAX_K - 1;
+ 
+void addEdge(int f, int t, int c) {
+  G[f].push_back(t);
+  C[f][t] = c;
+  G[t].push_back(f);
+}
+ 
+int get(int l, int k) {
+  return n + m + 3 * l + k - 1;
+}
+ 
+void preprocess() {
+  for(int i = 1; i <= n; ++i)
+    addEdge(S, i, nr[i]);
+ 
+  for(int i = 1; i <= m; ++i)
+    addEdge(i + n, T, 1);
+ 
+  for(int i = 1; i <= n; ++i) {
+    for(int j = 1; j <= 3; ++j) 
+      addEdge(i, get(i, j), 0);
+ 
+     
+    for(int k = 1; k <= st[i]; ++k) {
+      addEdge(get(i, 1), k + n, 1);
+      addEdge(get(i, 3), k + n, 1);
+    }
+ 
+    for(int k = 0; k < dr[i]; ++k) {
+      addEdge(get(i, 2), n + m - k, 1);
+      addEdge(get(i, 3), n + m - k, 1);
+    }
+  }
+}
+ 
+int Q[MAX_K];
+ 
+bool BFS() {
+  memset(viz, 0, sizeof(viz));
+  memset(TT, 0, sizeof(TT));
+  Q[0] = 0;
+  Q[++Q[0]] = S;
+ 
+  for(int i = 1; i <= Q[0]; ++i) {
+    int now = Q[i];
+    if(now == T)
+      continue;
+ 
+    for(auto e: G[now]) {
+      if(viz[e])
+        continue;
+      if(F[now][e] == C[now][e])
+        continue;
+ 
+      viz[e] = 1;
+      Q[++Q[0]] = e;
+      TT[e] = now;
+    }
+  }
+   
+ 
+  return viz[T];
+}
+ 
+void addFlow() {
+  int fmin = INF;
+  for(int now = T; now != S; now = TT[now]) {
+    fmin = min(fmin, C[TT[now]][now] - F[TT[now]][now]);
+    if(!fmin)
+      return;
+  }
+ 
+  for(int now = T; now != S; now = TT[now]) {
+    F[TT[now]][now] += fmin;
+    F[now][TT[now]] -= fmin;
+  }
+ 
+  flow += fmin;
+}
+ 
+void computeFlow() {
+  while(BFS()) {
+    for(auto e: G[T]) {
+      if(viz[e]) {
+        TT[T] = e;
+        addFlow();
+      }
+    }
+  }
+}
+ 
+void debug() {
+  for(int i = 1; i <= n; ++i) {
+ 
+    for(int j = 1; j <= 3; ++j) {
+      for(int k = 1; k <= m; ++k) {
+        if(F[get(i, j)][k + n]) {
+        }
+      }
+    }
+  }
+}
+ 
+bool ok(int D) {
+  clear();
+  for(int i = 1; i <= n; ++i) {
+    int mn = (nr[i] / 2) - D / 2;
+ 
+    if(mn < 0)
+      mn = 0;
+ 
+    int rem = nr[i] - 2 * mn;
+ 
+    if(rem > D) {
+      mn++;
+      rem = nr[i] - 2 * mn;
+    }
+ 
+ 
+    if(rem < 0)
+      return 0;
+ 
+    C[i][get(i, 1)] = C[i][get(i, 2)] = mn;
+    C[i][get(i, 3)] = rem;
+  }
+ 
+  computeFlow();
+  return (flow == req);
+}
+ 
+int bsearch() {
+  int i, step;
+  for(step = 1; step < m; step *= 2);
+ 
+ 
+  for(i = m + 1; step; step /= 2) {
+    if(i - step >= 0 && ok(i - step))
+      i -= step;
+  }
+  if(i == m + 1)
+    return -1;
+  return i;
+}
+ 
+int main() {
+  ifstream in("mingiute.in");
+  in >> n >> m;
+  for(int i = 1; i <= n; ++i) {
+    in >> st[i] >> dr[i] >> nr[i];
+    req += nr[i];
+  }
+  in.close();
+ 
+  preprocess();
+ 
+  ofstream out("mingiute.out");
+ 
+  out << bsearch() << "\n";
+  return 0;
+}
