@@ -1,0 +1,40 @@
+#include <cstdio>
+#include <vector>
+ 
+using namespace std;
+ 
+const int MaxN=100010;
+vector<int> v[MaxN];
+int cost[MaxN],q[MaxN],grad[MaxN];
+double d[MaxN];
+ 
+int main()
+{
+    freopen("hektor.in", "r", stdin);
+    freopen("hektor.out", "w", stdout);
+    int n,m,a,b,x,y,nr=0;
+    scanf("%d%d%d%d",&n,&m,&a,&b);
+    for(int i=1;i<=n;i++) scanf("%d",&cost[i]);
+    for(int i=1;i<=m;i++)
+    {
+        scanf("%d%d",&x,&y);
+        v[x].push_back(y);
+        grad[y]++;
+    }
+    for(int i=1;i<=n;i++)
+        if(grad[i]==0) q[++nr]=i;
+    for(int i=1;i<=nr;i++)
+        for(vector<int>::iterator it=v[q[i]].begin();it!=v[q[i]].end();it++)
+            if(--grad[*it]==0) q[++nr]=*it;
+    d[b]=cost[b];
+    for(int i=nr;i;i--)
+    {
+        int cnt=0;
+        double s=0;
+        for(vector<int>::iterator it=v[q[i]].begin();it!=v[q[i]].end();it++)
+            if(d[*it]) {s+=d[*it];cnt++;}
+        if(cnt) d[q[i]]=s/cnt+cost[q[i]];
+    }
+    printf("%f",d[a]);
+    return 0;
+}
