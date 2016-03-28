@@ -1,0 +1,153 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "lianyu.in" ;
+const char OUT [ ] = "lianyu.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 3e3 + 14 ;
+ 
+vector < int > gr [ MAX ] ;
+vector < int > graf [ MAX << 1 ] ;
+ 
+int sub [ MAX << 1 ] ;
+int dp [ MAX << 1 ] [ MAX ] ;
+ 
+bitset < MAX > viz ;
+bitset < MAX * 2 > virgin ;
+bitset < MAX * 2 > fake ;
+ 
+stack < pair < int , int > > S ;
+ 
+int level [ MAX ] ;
+int low [ MAX ] ;
+int cost [ MAX ] ;
+ 
+int fakes ;
+ 
+inline void baga ( int a , int b )
+{
+    ++ fakes ;
+    fake [ fakes ] = 1 ;
+    int x , y ;
+    do
+    {
+        x = S.top().first ;
+        y = S.top().second ;
+        S.pop() ;
+        graf [ fakes ].pb ( y ) ;
+        graf [ y ].pb ( fakes ) ;
+    }while ( ! ( a == x and b == y ) ) ;
+    graf [ fakes ].pb ( a ) ;
+    graf [ a ].pb ( fakes ) ;
+}
+ 
+inline void dfs ( int nod , int tata , int lvl )
+{
+    viz [ nod ] = 1 ;
+    level [ nod ] = lvl ;
+    low [ nod ] = lvl ;
+    for ( auto x : gr [ nod ] )
+    {
+        if ( x == tata ) {
+            continue ;
+        }
+        if ( viz [ x ] == 0 ) {
+            S.push( mp ( nod , x ) ) ;
+            dfs ( x , nod , lvl + 1 ) ;
+            low [ nod ] = min ( low [ nod ] , low [ x ] ) ;
+            if ( low [ x ] >= level [ nod ] ) {
+                baga ( nod , x ) ;
+            }
+        }
+        else {
+            low [ nod ] = min ( low [ nod ] , level [ x ] ) ;
+        }
+    }
+}
+ 
+inline void dfsdp ( int nod , int boss , int k )
+{
+    virgin [ nod ] = 1 ;
+    sub [ nod ] = !fake [ nod ] ;
+    for ( auto x : graf [ nod ] )
+    {
+        if ( virgin [ x ] ) continue ;
+        dfsdp ( x , nod , k ) ;
+        sub [ nod ] += sub [ x ] ;
+    }
+    for ( auto x : graf [ nod ] )
+    {
+        if ( x == boss ) {
+            continue ;
+        }
+        FORNBACK ( i , min ( k , sub [ nod ] ) , 1 )
+        {
+            FORNBACK ( j , min ( sub [ x ], i ) , 1 ) {
+                dp [ nod ] [ i ] = min ( dp [ nod ] [ i ] , dp [ nod ] [ i - j ] + dp [ x ] [ j ] ) ;
+            }
+        }
+    }
+    if ( !fake [ nod ] ) {
+        FORNBACK ( i , min ( k , sub [ nod ] ) , 1 ) {
+            dp [ nod ] [ i ] = dp [ nod ] [ i - 1 ] + cost [ nod ] ;
+        }
+    }
+}
+ 
+int main ( void )
+{
+    int n , m , k ;
+    cin >> n >> m >> k ;
+    FORN ( i , 1 , n ) {
+        cin >> cost [ i ] ;
+    }
+    fakes = n ;
+    while ( m -- )
+    {
+        int x , y ;
+        cin >> x >> y ;
+        gr [ x ].pb ( y ) ;
+        gr [ y ].pb ( x ) ;
+    }
+    dfs ( 1 , 0 , 1 ) ;
+    FORN ( i , 1 , fakes ) {
+        FORN ( j , 1 , 3000 ) {
+            dp [ i ] [ j ] = (int) 1e9 ;
+        }
+    }
+    dfsdp ( 1 , 0 , k ) ;
+    int result = (int) 2e9 ;
+    FORN ( i , 1 , fakes ) {
+        result = min ( result , dp [ i ] [ k ] ) ;
+    }
+    cout << result << '\n' ;
+    return 0;
+}
