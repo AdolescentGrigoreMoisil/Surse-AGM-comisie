@@ -1,0 +1,176 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+typedef pair<int, int> Point;
+#define x first
+#define y second
+ 
+const int BS = 128;
+const int BC = 128;
+const int MAXN = 5005;
+ 
+ 
+bool Viz[2][MAXN], Ers[MAXN];
+int Color[2][MAXN], St[2 * MAXN];
+int I[MAXN], R[MAXN];
+Point P[MAXN];
+ 
+struct cmp {
+    bool operator () (const int &a, const int &b) const {
+        return make_pair(P[a].y, a) < make_pair(P[b].y, b);
+    }
+};
+ 
+set<int, cmp> Set[BC];
+vector<int> Bad[MAXN];
+ 
+int n, ste, now_d, colors;
+ 
+void Erase(int i) {
+    Ers[i] = 1;
+    Set[i / BS].erase(i);
+}
+ 
+void Revert() {
+    memset(Ers, 0, sizeof(Ers));
+    for(int i = 1; i <= n; ++i)
+        Set[i / BS].insert(i);
+}
+ 
+int TryBlock(int ind, int i, int d) {
+    auto it = Set[i].lower_bound(0);
+    if(it != Set[i].end() && P[*it].y <= P[ind].y + d)
+        return *it;
+    return 0;
+}
+int Fetch(int ind, int d) {
+    P[0] = {0, P[ind].y - d};
+ 
+    for(int i = ind + 1; i <= n && P[i].x <= P[ind].x + d;) {
+        if(i % BS == 0 && i + BS - 1 <= n && P[i + BS - 1].x <= P[ind].x + d) {
+            int ret = TryBlock(ind, i / BS, d);
+            if(ret) return ret;
+            i += BS;
+        } else {
+            if(!Ers[i] && abs(P[i].y - P[ind].y) <= d)
+                return i;
+            i++;
+        }
+    }
+ 
+    for(int i = ind - 1; i > 0 && P[i].x >= P[ind].x - d;) {
+        if((i + 1) % BS == 0 && i - BS + 1 > 0 && P[i - BS + 1].x >= P[ind].x - d) {
+            int ret = TryBlock(ind, i / BS, d);
+            if(ret) return ret;
+            i -= BS;
+        } else {
+            if(!Ers[i] && abs(P[i].y - P[ind].y) <= d)
+                return i;
+            i --;
+        }
+    }
+ 
+    return 0;
+}
+ 
+void dfs1(int node, int st) {
+    Viz[st][node] = 1;
+ 
+    if(st == 0) {
+        Erase(node);
+ 
+        for(auto vec : Bad[node]) {
+            if(!Viz[1][vec])
+                dfs1(vec, 1);
+        }
+    } else {
+ 
+        int vec;
+        while(vec = Fetch(node, now_d))
+            dfs1(vec, 0);
+    }
+ 
+    St[++ste] = node * 2 + st;
+}
+ 
+void dfs2(int node, int st) {
+    Color[st][node] = colors;
+ 
+    if(st == 1) {
+        Erase(node);
+ 
+        for(auto vec : Bad[node]) {
+            if(!Color[0][vec])
+                dfs2(vec, 0);
+        }
+    } else {
+        int vec;
+        while(vec = Fetch(node, now_d))
+            dfs2(vec, 1);
+    }
+}
+ 
+bool Try(int d) {
+    now_d = d;
+    ste = 0;
+    colors = 0;
+ 
+    memset(Viz, 0, sizeof(Viz));
+    memset(Color, 0, sizeof(Color));
+ 
+    Revert();
+    for(int i = 1; i <= n; ++i) {
+        if(!Viz[0][i]) dfs1(i, 0);
+        if(!Viz[1][i]) dfs1(i, 1);
+    }
+ 
+    Revert();
+    for(int i = 2 * n; i >= 1; --i) {
+        if(!Color[St[i] % 2][St[i] / 2]) {
+            ++colors;
+            dfs2(St[i] / 2, St[i] % 2);
+        }
+    }
+ 
+    for(int i = 1; i <= n; ++i)
+        if(Color[0][i] == Color[1][i])
+            return false;
+    return true;
+}
+ 
+ 
+int main() {
+    ifstream fin("centrale.in");
+    ofstream fout("centrale.out");
+ 
+    int x, y, a, b, m;
+    fin >> n >> m;
+ 
+    for(int i = 1; i <= n; ++i) {
+        fin >> x >> y;
+        P[i] = {x + y, x - y};
+        I[i] = i;
+    }
+    sort(I + 1, I + n + 1, [](int a, int b) {return P[a] < P[b];});
+    sort(P + 1, P + n + 1);
+ 
+    for(int i = 1; i <= n; ++i) {
+        R[I[i]] = i;
+    }
+ 
+    while(m--) {
+        fin >> a >> b;
+        Bad[R[a]].push_back(R[b]);
+        Bad[R[b]].push_back(R[a]);
+    }
+ 
+    int ans = 0, i;
+    for(i = 1; i <= 1e6; i <<= 1);
+    for(; i; i >>= 1)
+        if(Try(ans + i))
+            ans += i;
+ 
+    fout << ans + 1;
+ 
+    return 0;
+}
