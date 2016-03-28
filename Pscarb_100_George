@@ -1,0 +1,22 @@
+#include <cstdio>
+#include <cassert>
+ 
+using namespace std;
+ 
+int main()
+{
+    freopen("pscarb.in", "r", stdin);
+    freopen("pscarb.out", "w", stdout);
+    int n,k;
+    scanf("%d%d",&n,&k);
+    assert(2<=n && n<=100);
+    assert(2<=k && k<=n);
+    if(k>2 || n%2==0) printf("-1");
+    else
+    {
+        for(int i=1;i<n;i++) printf("%d %d\n",i,i+1);
+        printf("RGB");
+        for(int i=4;i<=n;i++) printf("R");
+    }
+    return 0;
+}
