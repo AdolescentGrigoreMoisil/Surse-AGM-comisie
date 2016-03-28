@@ -1,0 +1,204 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+# include "cstdlib"
+# include "cstdio"
+
+const char IN [ ] =  "revolve.in" ;
+const char OUT [ ] = "revolve.out" ;
+
+using namespace std ;
+
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+
+#define _FIN "revolve.in"
+#define _FOUT "revolve.out"
+
+const int NODES = 1e5 + 14 ;
+const int LOG = 20 ;
+
+void result(char msg[],int p) {
+    fprintf(stderr,msg);
+    fprintf(stdout,"%d",p);
+    exit(0);
+}
+
+vector < pair < pair < int , int > , int > > Restrictions ;
+vector < int > gr [ NODES ] ;
+
+int dp [ LOG ] [ NODES ] ;
+int tata [ NODES ] ;
+int depth [ NODES ] ;
+
+bitset < NODES > viz ;
+
+stack < int > st ;
+
+inline void dfs ( int nod , int f , int lvl ) {
+    //assert ( nod <= 50000 ) ;
+    //viz [ nod ] = 1 ;
+    //tata [ nod ] = f ;
+    //depth [ nod ] = lvl ;
+    //for ( auto x : gr [ nod ] ) {
+    //    if ( viz [ x ] ) {
+    //        continue ;
+   //    }
+    //    dfs ( x , nod , lvl + 1 ) ;
+    //}
+    depth [ nod ] = 1 ;
+     st.push ( nod ) ;
+    while ( !st.empty() )
+    {
+        int last = st.top() ;
+        viz [ last ] = nod ;
+        while ( gr [ last ].size ( ) and viz [ gr [ last ].back() ] ) gr [ last ].pop_back ( ) ;
+        if ( gr [ last ].size ( ) )
+        {
+            st.push ( gr [ last ].back() ) ;
+            tata [ gr [ last ].back() ] = last;
+            depth [ gr [ last ].back() ] = st.size() ;
+        }
+        else {
+            st.pop() ;
+        }
+    }
+}
+
+int lca ( int x , int y , int logg )
+{
+    if ( depth [ x ] < depth [ y ] ) {
+        swap ( x , y ) ;
+    }
+    int adanc = depth [ x ] - depth [ y ] ;
+    FORN ( i , 0 , logg )
+        if ( adanc & ( 1 << i ) ) {
+            x = dp [ i ] [ x ] ;
+        }
+    if ( x == y ) return x ;
+    FORNBACK ( i , logg , 0 )
+        if ( dp [ i ] [ x ] != dp [ i ] [ y ] )
+        {
+            x = dp [ i ] [ x ] ;
+            y = dp [ i ] [ y ] ;
+        }
+    return dp [ 0 ] [ x ] ;
+}
+
+const int BAD [ ] = { 0 ,0,0,0,1,1,0,0,1,0,1,1,1,1,0,1,0 } ;
+
+int main()
+{
+    FILE *fin,*fout,*fok;
+    fin=fopen(_FIN,"r");
+    if(!fin) result("Fisier de intrare lipsa!",0);
+    fout=fopen(_FOUT,"r");
+    if(!fout) result("Fisier de iesire lipsa!",0);
+    int t ;
+    if ( fscanf ( fin , "%d" , &t ) != 1 ) result ( "Fisier de intrare corupt la teste! " , 0 ) ;
+    int counter = 0 ;
+    while ( t -- )
+    {
+       // printf ( "%d\n" , counter ) ;
+        ++ counter ;
+        int n , m ;
+        if ( fscanf ( fin , "%d" , &n ) != 1 ) result ( "Fisier de intrare corupt la noduri!" , 0 ) ;
+        if ( fscanf ( fin , "%d" , &m ) != 1 ) result ( "Fisier de intrare corupt la restrictii!" , 0 ) ;
+        Restrictions.clear() ;
+        FORN ( i , 1 , m ) {
+            int a , b , c ;
+            if ( fscanf ( fin , "%d" , &a ) != 1 ) result ( "Fisier de intrare corupt la 1!" , 0 ) ;
+            if ( fscanf ( fin , "%d" , &b ) != 1 ) result ( "Fisier de intrare corupt la 2!" , 0 ) ;
+            if ( fscanf ( fin , "%d" , &c ) != 1 ) result ( "Fisier de intrare corupt la 3!" , 0 ) ;
+            assert ( a >= 1 and a <= n ) ;
+            assert ( b >= 1 and b <= n ) ;
+            assert ( c >= 1 and c <= n ) ;
+            Restrictions.pb ( mp ( mp ( a , b ) , c ) ) ;
+        }
+        FORN ( i , 1 , n ) {
+            gr [ i ].clear ( ) ;
+        }
+        int ROOT ;
+        if ( fscanf ( fout , "%d" , &ROOT ) != 1 ) result ( "Fisier de iesire corupt!" , 0 ) ;
+        if ( ROOT == -1 ) {
+            if ( !BAD [ counter ] ) {
+                result ( "Incorect!" , 0 ) ;
+            }
+            else {
+                continue ;
+            }
+        }
+        if ( BAD [ counter ] ){
+            if ( ROOT != -1 ) {
+                result ( "Incorect!" , 0 ) ;
+            }
+            else {
+                continue ;
+            }
+        }
+        int edges = n - 1 ;
+        while ( edges -- ) {
+            int a , b ;
+            if ( fscanf ( fout , "%d" , &a ) != 1 ) result ( "Fisier de iesire corupt!" , 0 ) ;
+            if ( fscanf ( fout , "%d" , &b ) != 1 ) result ( "Fisier de iesire corupt!" , 0 ) ;
+            if ( a < 1 or a > n ) result ( "Fisier de iesire corupt!" , 0 ) ;
+            if ( b < 1 or b > n ) result ( "Fisier de iesire corupt!" , 0 ) ;
+            gr [ a ].pb ( b ) ;
+            gr [ b ].pb ( a ) ;
+        }
+        FORN ( i , 1 , n ) {
+            depth [ i ] = 0 ;
+            viz [ i ] = 0 ;
+            tata [ i ] = 0 ;
+        }
+        dfs ( ROOT , 0 , 1 ) ;
+        FORN ( i , 1 , n ) {
+            if(depth[i]<=0) result("Fisier de iesire corupt!",0);
+        }
+        int putt = 0 ;
+        int copie = n ;
+        while ( copie ) {
+            ++ putt ;
+            copie >>= 1 ;
+        }
+        FORN ( i , 0 , putt ) {
+            FORN ( j , 1 , n ) {
+                dp [ i ] [ j ] = 0 ;
+            }
+        }
+        FORN ( i , 1 , n ) {
+            dp [ 0 ] [ i ] = tata [ i ] ;
+        }
+        FORN ( i , 1 , putt ) {
+            FORN ( j , 1 , n ) {
+                dp [ i ] [ j ] = dp [ i - 1 ] [ dp [ i - 1 ] [ j ] ] ;
+            }
+        }
+        for ( auto x : Restrictions ) {
+            if ( lca ( x.first.first , x.first.second , putt ) != x.second ) {
+                result ( "Incorect!" , 0 ) ;
+            }
+        }
+    }
+    result ( "Corect!" , 100 ) ;
+    return 0;
+}
