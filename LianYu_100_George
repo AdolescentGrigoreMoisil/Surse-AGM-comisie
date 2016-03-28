@@ -1,0 +1,101 @@
+#include <cstdio>
+#include <vector>
+#include <cassert>
+ 
+using namespace std;
+ 
+const int MaxN=3010,MaxK=3010,inf=1000000000;
+vector<int> v[MaxN],g[2*MaxN];
+vector<pair<int,int> > q;
+int niv[MaxN],nivmin[MaxN],cost[MaxN],d[2*MaxN][MaxK],size[2*MaxN],n,nr,k;
+char vaz[MaxN];
+ 
+void comp_biconexa(int x,int y)
+{
+    ++nr;
+    int a,b;
+    do
+    {
+        a=q.back().first;b=q.back().second;
+        q.pop_back();
+        g[nr].push_back(b);
+        g[b].push_back(nr);
+    }while(x!=a && y!=b);
+    g[nr].push_back(x);
+    g[x].push_back(nr);
+}
+ 
+void dfs(int nod,int tata,int lev)
+{
+    niv[nod]=nivmin[nod]=lev;
+    vaz[nod]=1;
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+    {
+        if(*it==tata) continue;
+        if(!vaz[*it])
+        {
+            q.push_back({nod,*it});
+            dfs(*it,nod,lev+1);
+            nivmin[nod]=min(nivmin[nod],nivmin[*it]);
+            if(niv[nod]<=nivmin[*it]) comp_biconexa(nod,*it);
+        }
+        else nivmin[nod]=min(nivmin[nod],niv[*it]);
+    }
+}
+ 
+void solve(int nod,int tata)
+{
+    if(nod<=n) size[nod]=1;
+    else size[nod]=0;
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+        if(*it!=tata)
+        {
+            solve(*it,nod);
+            size[nod]+=size[*it];
+        }
+    int s=0;
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+        if(*it!=tata)
+        {
+            s+=size[*it];
+            for(int i=min(k,s);i;i--)
+                for(int j=min(i,size[*it]);j;j--)
+                    d[nod][i]=min(d[nod][i],d[nod][i-j]+d[*it][j]);
+        }
+    if(nod<=n)
+        for(int i=min(k,size[nod]);i;i--) d[nod][i]=d[nod][i-1]+cost[nod];
+}
+ 
+int main()
+{
+    freopen("lianyu.in", "r", stdin);
+    freopen("lianyu.out", "w", stdout);
+    int m,x,y,sol=inf;
+    scanf("%d%d%d",&n,&m,&k);
+    assert(1<=n && n<=3000);
+    assert(1<=m && m<=5000);
+    assert(1<=k && k<=n);
+    nr=n;
+    for(int i=1;i<=n;i++)
+    {
+        scanf("%d",&cost[i]);
+        assert(1<=cost[i] && cost[i]<=100000);
+    }
+    for(int i=1;i<=m;i++)
+    {
+        scanf("%d%d",&x,&y);
+        assert(1<=x && x<=n);
+        assert(1<=y && y<=n);
+        assert(x!=y);
+        v[x].push_back(y);
+        v[y].push_back(x);
+    }
+    dfs(1,0,1);
+    fprintf(stderr,"%d",nr);
+    for(int i=1;i<=nr;i++)
+        for(int j=1;j<=k;j++) d[i][j]=inf;
+    solve(1,0);
+    for(int i=1;i<=nr;i++) sol=min(sol,d[i][k]);
+    printf("%d\n",sol);
+    return 0;
+}
