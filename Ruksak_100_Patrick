@@ -1,0 +1,102 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "ruksak.in" ;
+const char OUT [ ] = "ruksak.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 3e5 + 14 ;
+ 
+vector < int > gr [ MAX ] ;
+ 
+struct cmp
+{
+    bool operator ( ) ( const int &a , const int &b ) const
+    {
+        return a > b ;
+    }
+};
+ 
+int dp [ 4000 ] ;
+ 
+int main()
+{
+    int N , G ;
+    cin >> N >> G ;
+    assert ( N >= 1 ) ;
+    assert ( N <= 300000 ) ;
+    assert ( G >= 1 ) ;
+    assert ( G <= 3000 ) ;
+    int s = 0 ;
+    FORN ( i , 1 , N )
+    {
+        int greutate , profit ;
+        cin >> greutate >> profit ;
+        gr [ greutate ].pb ( profit ) ;
+        if ( ! greutate ) s += profit ;
+        assert ( greutate >= 0 ) ;
+        assert ( greutate <= 3000 ) ;
+        assert ( profit >= 0 ) ;
+        assert ( profit <= 3000 ) ;
+    }
+    FORN ( i , 1 , G ) {
+        sort ( gr[i].begin ( ) , gr[i].end ( ) , cmp ( ) ) ;
+    }
+    dp [ 0 ] = 0 ;
+    int maxx = 0 ;
+    FORN ( i , 1 , G )
+    {
+        int cate = G / i ;
+        int nr = 0 ;
+        for ( auto x : gr [ i ] )
+        {
+            ++ nr ;
+            if ( nr > cate ) {
+                continue ;
+            }
+            FORNBACK ( j , maxx , 0 ) {
+                if ( j and !dp [ j ] ) {
+                    continue ;
+                }
+                if ( i + j <= G )
+                dp [ i + j ] = max ( dp [ i + j ] , dp [ j ] + x ) ;
+                if ( i + j <= G )
+                    maxx = max ( maxx , i + j ) ;
+                else maxx = G ;
+            }
+        }
+    }
+    int pmax = 0 ;
+    FORNBACK ( i , G , 1 ) {
+        pmax = max ( pmax , dp [ i ] ) ;
+    }
+    cout << pmax + s << '\n' ;
+    return 0;
+}
