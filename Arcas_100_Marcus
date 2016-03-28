@@ -1,0 +1,96 @@
+/*
+ * George Marcus
+ * O(NlogN + MlogM)
+ * offline
+ */
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define MAXN 100050
+ 
+int N, M;
+vector<int> diffs;
+int K;
+pair<int, pair<int, int> > targets[MAXN];
+pair<pair<int, int>, pair<int, int> > shots[2 * MAXN];
+int ans[MAXN];
+int aib[3 * MAXN];
+ 
+int getIndex(int x) {
+    return lower_bound(diffs.begin(), diffs.end(), x) - diffs.begin() + 1;
+}
+ 
+void update(int pos, int val) {
+    while (pos <= K) {
+        aib[pos] += val;
+        pos += pos & (-pos);
+    }
+}
+ 
+void insert(int a, int b) {
+    a = getIndex(a);
+    b = getIndex(b);
+    update(a, 1);
+    update(b + 1, -1);
+}
+ 
+int query(int pos) {
+    pos = getIndex(pos);
+    int ret = 0;
+    while (pos > 0) {
+        ret += aib[pos];
+        pos -= pos & (-pos);
+    }
+    return ret;
+}
+ 
+int main() {
+    assert(freopen("arcas.in", "r", stdin));
+    assert(freopen("arcas.out", "w", stdout));
+    cin.sync_with_stdio(false);
+ 
+    cin >> N >> M;
+    for (int i = 0; i < N; i++) {
+        int X, Y1, Y2;
+        cin >> X >> Y1 >> Y2;
+        targets[i] = { X, { Y1 - X, Y2 - X } };
+        diffs.push_back(Y1 - X);
+        diffs.push_back(Y2 - X);
+    }
+    sort(targets, targets + N);
+ 
+    for (int i = 0; i < M; i++) {
+        int X, Y, R;
+        cin >> X >> Y >> R;
+        shots[i] = { { X, i }, { Y - X, 1 } };
+        shots[i + M] = { { X + R + 1, i }, { Y - X, -1 } };
+        diffs.push_back(Y - X);
+    }
+    sort(shots, shots + 2 * M);
+ 
+    sort(diffs.begin(), diffs.end());
+    diffs.resize(unique(diffs.begin(), diffs.end()) - diffs.begin());
+    K = (int) diffs.size();
+ 
+    int j = N - 1;
+    for (int i = 2 * M - 1; i >= 0; i--) {
+        int x = shots[i].first.first;
+        while (j >= 0 && targets[j].first >= x) {
+            insert(targets[j].second.first, targets[j].second.second);
+            j--;
+        }
+ 
+        int idx = shots[i].first.second;
+        int s = shots[i].second.second;
+        int cnt = query(shots[i].second.first);
+        ans[idx] += s * cnt;
+    }
+ 
+    for (int i = 0; i < M; i++) {
+        cout << ans[i] << '\n';
+    }
+ 
+    return 0;
+}
