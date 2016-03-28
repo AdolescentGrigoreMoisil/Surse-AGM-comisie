@@ -1,0 +1,128 @@
+/**
+ * @problem Shukarime
+ * @author EricPtS
+ */
+ 
+#include <bits/stdc++.h>
+ 
+typedef unsigned long long uLL;
+ 
+const int MAX_N = 1e5 + 10;
+const int MAX_V = 1e6 + 10;
+ 
+uLL hash[MAX_N];
+ 
+std::map<uLL, int> H;
+ 
+uLL rnd[MAX_V];
+//assign random values to all of the possible prime factors
+ 
+std::ifstream in("shukarime.in");
+std::ofstream out("shukarime.out");
+ 
+int n, g;
+int v[MAX_N];
+ 
+int low[MAX_V];
+// low[i] = 
+// the lowest prime factor that divides i
+ 
+int ap[MAX_V];
+// ap[i] = 
+// how many times has the prime factor i appeared
+// thus far
+// modulo G
+ 
+uLL factHash[MAX_V];
+// factHash[i] = 
+// the current contribution of prime factor i
+// in the hash
+ 
+void preprocess() {
+  std::mt19937_64 gen;
+  std::uniform_int_distribution<uLL> dis;
+  for(int i = 1; i < MAX_V; ++i) {
+    low[i] = i;
+    rnd[i] = dis(gen);
+  }
+  for(int i = 2; i < MAX_V; i += 2)
+    low[i] = 2;
+  for(int i = 2; i < MAX_V; ++i) {
+    if(low[i] == i) {
+    //i is prime
+      for(uLL j = i * i; j < MAX_V; j += 2 * i) {
+        low[j] = std::min(low[j], i);
+      }
+    }
+  }
+}
+ 
+std::vector<int> factorize(int val) {
+  std::vector<int> ret;
+  while(val > 1) {
+    ret.push_back(low[val]);
+    val /= low[val];
+  }
+  return ret;
+}
+ 
+uLL solve() {
+  in >> n >> g;
+  H.clear();
+  for(int i = 1; i <= n; ++i)
+    in >> v[i];
+  memset(hash, 0, sizeof(hash));
+ 
+  for(int i = 1; i < MAX_V; ++i) {
+    factHash[i] = 0;
+    ap[i] = 0;
+  }
+  uLL ret = 0;
+  hash[0] = 0;
+  H[hash[0]] = 1;
+ 
+  for(int i = 1; i <= n; ++i) {
+    std::vector<int> factors = factorize(v[i]);
+    hash[i] = hash[i - 1];
+    for(const auto &f: factors) {
+      const uLL x = rnd[f];
+      hash[i] -= 1LL * x * ap[f] * ap[f];
+      hash[i] -= factHash[f];
+      ap[f]++;
+      if(ap[f] != g) {
+ 
+        if(factHash[f] == 0)
+          factHash[f] = 1;
+ 
+        factHash[f] *= f;
+      } else {
+        ap[f] = 0;
+        factHash[f] = 0;
+      }
+      hash[i] += factHash[f];
+      hash[i] += 1LL * x * ap[f] * ap[f];
+    }
+ 
+    if(H.count(hash[i])) {
+      ret += H[hash[i]];
+      H[hash[i]]++;
+    } else {
+      H[hash[i]] = 1;
+    }
+  }
+  return ret;
+}
+ 
+ 
+int main() {
+  preprocess();
+  int T;
+  in >> T;
+ 
+ 
+  while(T--)
+    out << solve() << "\n";
+ 
+ 
+  return 0;
+}
