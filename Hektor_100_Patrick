@@ -1,0 +1,93 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "hektor.in" ;
+const char OUT [ ] = "hektor.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 1e5 + 14 ;
+ 
+double expected [ MAX ] ;
+vector < int > gr [ MAX ] ;
+int cost [ MAX ] ;
+int grad [ MAX ] ;
+int A , B ;
+queue < int > Q ;
+vector < int > z ;
+ 
+int main()
+{
+    int n , m ;
+    cin >> n >> m >> A >> B ;
+    FORN ( i , 1 , n ) {
+        cin >> cost [ i ] ;
+    }
+    while ( m -- )
+    {
+        int a , b ;
+        cin >> a >> b ;
+        gr [ a ].pb ( b ) ;
+        grad [ b ] ++ ;
+    }
+    FORN ( i , 1 , n ) {
+        if ( grad [ i ] == 0 ) {
+            Q.push ( i ) ;
+        }
+    }
+    while ( !Q.empty() )
+    {
+        int nod = Q.front() ;
+        Q.pop() ;
+        for ( auto x : gr [ nod ] ) {
+            -- grad [ x ] ;
+            if ( grad [ x ] == 0 ) {
+                Q.push ( x ) ;
+            }
+        }
+        z.pb ( nod ) ;
+    }
+    expected [ B ] = cost [ B ] ;
+    reverse ( z.begin ( ) , z.end ( ) ) ;
+    for ( auto y : z ) {
+        double sum = 0 ;
+        int nr = 0 ;
+        for ( auto x : gr [ y ] ) {
+            if ( expected [ x ] ) {
+                sum += expected [ x ] ;
+                ++ nr ;
+            }
+        }
+        if ( nr ) {
+            expected [ y ] = sum / nr + cost [ y ] ;
+        }
+    }
+    cout << fixed << setprecision ( 7 ) << expected [ A ] << '\n' ;
+    return 0;
+}
