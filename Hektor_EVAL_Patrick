@@ -1,0 +1,30 @@
+#include<cstdio>
+#include<cstdlib>
+#include<cstring>
+#include<iostream>
+#include<bits/stdc++.h>
+#define _FIN "hektor.in"
+#define _FOUT "hektor.out"
+#define _FOK "hektor.ok"
+using namespace std;
+
+void result(char msg[],int p) {
+    fprintf(stderr,msg);
+    fprintf(stdout,"%d",p);
+    exit(0);
+}
+ifstream fin ( _FOUT ) ;
+ifstream gin ( _FOK ) ;
+int main(){
+    double sol1 ;
+    double sol2 ;
+    fin >> sol1 ;
+    //cout << sol1 << endl ;
+    gin >> sol2 ;
+    //cout << sol2 << endl ;
+    if (fabs ( sol1 - sol2 ) > 0.000001 ) {
+        result ( "Te-am popit ca-n 2004!" , 0 ) ;
+    }
+    result("$orinel ar fi mandru!",10);
+    return 0;
+}
