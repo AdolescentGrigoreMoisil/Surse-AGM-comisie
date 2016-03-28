@@ -1,0 +1,174 @@
+/*
+ * George Marcus
+ * O(T * MlogN)
+ */
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <cassert>
+ 
+using namespace std;
+ 
+#define MAXN 100050
+#define MAXLOGN 18
+ 
+int T, N, M;
+vector<pair<int, int> > rules[MAXN];
+vector<int> A[MAXN];
+int ans[MAXN];
+int in[MAXN];
+int v[MAXN];
+bool used[MAXN];
+queue<int> Q;
+int dp[MAXLOGN][MAXN];
+int nodeOrder[MAXN];
+int parent[MAXN];
+ 
+void addEdge(int a, int b) {
+    if (a != b) {
+        A[a].push_back(b);
+        in[b]++;
+        used[a] = used[b] = true;
+    }
+}
+ 
+void init() {
+    for (int i = 0; i < N; i++) {
+        in[i] = 0;
+        A[i].clear();
+        v[i] = 0;
+        rules[i].clear();
+        used[i] = false;
+    }
+}
+ 
+bool topologicalSort(int root) {
+    Q.push(root);
+ 
+    int idx = 0;
+    while (!Q.empty()) {
+        int p = Q.front(); Q.pop();
+        nodeOrder[idx++] = p;
+ 
+        for (int x : A[p]) {
+            in[x]--;
+            if (in[x] == 0) {
+                Q.push(x);
+            } else if (in[x] < 0) {
+                return false;
+            }
+        }
+    }
+ 
+    assert(idx == N);
+    return true;
+}
+ 
+int root(int t) {
+    if (parent[t] == t) {
+        return t;
+    }
+    return parent[t] = root(parent[t]);
+}
+ 
+void unite(int a, int b) {
+    a = root(a);
+    b = root(b);
+    if (a != b) {
+        ans[b] = a;
+        parent[b] = a;
+    }
+}
+ 
+bool build() {
+    for (int i = 0; i < N; i++) {
+        parent[i] = i;
+    }
+ 
+    for (int i = N - 1; i >= 0; i--) {
+        int node = nodeOrder[i];
+        for (auto rule : rules[node]) {
+            int a = rule.first;
+            int b = rule.second;
+            int ra = root(a);
+            int rb = root(b);
+            if (ra == rb) {
+                if (ra != node) {
+                    return false;
+                }
+            } else {
+                unite(node, ra);
+                unite(node, rb);
+            }
+        }
+    }
+ 
+    return true;
+}
+ 
+void solve() {
+    int root = -1;
+    for (int i = 0; i < N && root == -1; i++) {
+        if (in[i] == 0) {
+            root = i;
+        }
+    }
+ 
+    if (root == -1) {
+        cout << -1 << '\n';
+        return;
+    }
+ 
+    for (int i = 0; i < N; i++) {
+        if (in[i] == 0) {
+            if (i != root) {
+                addEdge(root, i);
+                rules[root].push_back({ root, i });
+            }
+        }
+    }
+ 
+    bool ok = topologicalSort(root);
+ 
+    if (!ok) {
+        cout << -1 << '\n';
+        return;
+    }
+ 
+    ok = build();
+ 
+    if (!ok) {
+        cout << -1 << '\n';
+        return;
+    }
+ 
+    cout << root + 1 << '\n';
+    for (int i = 0; i < N; i++) {
+        if (i != root) {
+            assert(ans[i] >= 0 && ans[i] < N);
+            cout << i + 1 << ' ' << ans[i] + 1 << '\n';
+        }
+    }
+}
+ 
+int main() {
+    assert(freopen("revolve.in", "r", stdin));
+    assert(freopen("revolve.out", "w", stdout));
+    cin.sync_with_stdio(false);
+ 
+    cin >> T;
+    for (int t = 1; t <= T; t++) {
+        cin >> N >> M;
+        int a, b, c;
+        while (M--) {
+            cin >> a >> b >> c;
+            a--; b--; c--;
+            rules[c].push_back({a, b});
+            addEdge(c, a);
+            addEdge(c, b);
+        }
+        solve();
+        init();
+    }
+    return 0;
+}
