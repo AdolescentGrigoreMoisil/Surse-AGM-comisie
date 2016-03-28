@@ -1,0 +1,240 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "mingiute.in" ;
+const char OUT [ ] = "mingiute.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 214 ;
+const int NR = MAX * 4 ;
+ 
+int n , m ;
+ 
+struct restrictii {
+    int st ;
+    int dr ;
+    int nr ;
+    void sett ( int unu , int doi , int trei )
+    {
+        st = unu ;
+        dr = doi ;
+        nr = trei ;
+    }
+};
+ 
+restrictii q [ MAX ] ;
+ 
+ 
+int flux [ NR ] [ NR ] ;
+int cap [ NR ] [ NR ] ;
+ 
+# define SOURCE 0
+ 
+vector < int > gr [ NR ] ;
+ 
+queue < int > Q ;
+ 
+bitset < NR > viz ;
+ 
+int tata [ NR ] ;
+ 
+inline int bfs ( int nod , int nr , int destt )
+{
+    Q.push ( nod ) ;
+    FORN ( i , 1 , nr ) {
+        viz [ i ] = 0 ;
+        tata [ i ] = 0 ;
+    }
+    viz [ nod ] = 1 ;
+    while ( !Q.empty() )
+    {
+        int node = Q.front() ;
+        Q.pop ( ) ;
+        for ( auto x : gr [ node ] )
+        {
+            if ( flux [ node ] [ x ] == cap [ node ] [ x ] or viz [ x ] ) {
+                continue ;
+            }
+            if ( x != destt ){
+                Q.push ( x ) ;
+            }
+            tata [ x ] = node ;
+            viz [ x ] = 1 ;
+        }
+    }
+    return viz [ destt ] ;
+}
+ 
+inline void trag ( int a , int b )
+{
+    cout << "am tras muchie de la " << a << " la " << b << '\n' ;
+}
+ 
+int ind [ MAX ] ;
+ 
+bool cauta ( int dez )
+{
+    int S = 0 ;
+    FORN ( i , 1 , n ) {
+        S = S + q [ i ].nr ;
+    }
+    int nr = 0 ;
+    FORN ( i , 1 , m ) {
+        ind [ i ] = ++ nr ;
+    }
+    FORN ( i , 1 , n )
+    {
+        int x = q [ i ].nr - dez ;
+        if ( x < 0 ){
+            x = 0 ;
+        }
+        if ( x & 1 ) {
+            x >>= 1 ;
+            ++ x ;
+        }
+        else {
+            x >>= 1 ;
+        }
+        int y = q [ i ].nr - 2 * x ;
+        if ( y < 0 ) return 0 ;
+        int vertex = ++ nr ;
+        int vertex2 = ++ nr ;
+        int vertex3 = ++ nr ;
+        gr [ SOURCE ].pb ( vertex ) ;
+        gr [ vertex ].pb ( SOURCE ) ;
+        cap [ SOURCE ] [ vertex ] = x ;
+        gr [ SOURCE ].pb ( vertex2 ) ;
+        gr [ vertex2 ].pb ( SOURCE ) ;
+        cap [ SOURCE ] [ vertex2 ] = x ;
+        gr [ SOURCE ].pb ( vertex3 ) ;
+        gr [ vertex3 ].pb ( SOURCE ) ;
+        cap [ SOURCE ] [ vertex3 ] = y ;
+        //trag ( SOURCE , vertex ) ;
+        //trag ( SOURCE , vertex2 ) ;
+        //trag ( SOURCE , vertex3 ) ;
+        FORN ( j , 1 , q [ i ].st )
+        {
+            gr [ vertex ].pb ( ind [ j ] ) ;
+            gr [ vertex3 ].pb ( ind [ j ] ) ;
+            gr [ ind [ j ] ].pb ( vertex ) ;
+            gr [ ind [ j ] ].pb ( vertex3 ) ;
+            cap [ vertex ] [ ind [ j ] ] = 1 ;
+            cap [ vertex3 ] [ ind [ j ] ] = 1 ;
+            //trag ( vertex , ind [ j ] ) ;
+            //trag ( vertex3 , ind [ j ] ) ;
+        }
+        FORN ( j , m - q [ i ].dr + 1 , m )
+        {
+            gr [ vertex2 ].pb ( ind [ j ] ) ;
+            gr [ vertex3 ].pb ( ind [ j ] ) ;
+            gr [ ind [ j ] ].pb ( vertex2 ) ;
+            gr [ ind [ j ] ].pb ( vertex3 ) ;
+            cap [ vertex2 ] [ ind [ j ] ] = 1 ;
+            cap [ vertex3 ] [ ind [ j ] ] = 1 ;
+            //trag ( vertex2 , ind [ j ] ) ;
+            //trag ( vertex3 , ind [ j ] ) ;
+        }
+    }
+    int dest = ++ nr ;
+    FORN ( i , 1 , m ) {
+        gr [ ind [ i ] ].pb ( dest ) ;
+        gr [ dest ].pb ( ind [ i ] ) ;
+        cap [ ind [ i ] ] [ dest ] = 1 ;
+        //trag ( ind [ i ] , dest ) ;
+    }
+    /// flowwwwwwww
+    int floww = 0 ;
+    for ( ; bfs ( SOURCE , nr , dest ) ; )
+    {
+        for ( auto x : gr [ dest ] )
+        {
+            if ( cap [ x ] [ dest ] == flux [ x ] [ dest ] or !viz [ x ] ) {
+                continue ;
+            }
+            tata [ dest ] = x ;
+            int local = 1 << 30 ;
+            for ( int i = dest ; i != 0 ; i = tata [ i ] ) {
+                local = min ( local , cap [ tata [ i ] ] [ i ] - flux [ tata [ i ] ] [ i ] ) ;
+            }
+            if ( local == 0 ) continue ;
+            for ( int i = dest ; i != 0 ; i = tata [ i ] ){
+                flux [ tata [ i ] ] [ i ] += local ;
+                flux [ i ] [ tata [ i ] ] -= local ;
+            }
+            floww += local ;
+        }
+    }
+    FORN ( i , 0 , nr ) {
+        if ( i <= m ) {
+            ind [ i ] = 0 ;
+        }
+        FORN ( j , 0 , nr ) {
+            cap [ i ] [ j ] = 0 ;
+            flux [ i ] [ j ] = 0 ;
+        }
+        gr [ i ].clear ( ) ;
+    }
+    return S == floww ;
+}
+ 
+int main ( void )
+{
+    cin >> n >> m ;
+    FORN ( i , 1 , n )
+    {
+        int a , b , c ;
+        cin >> a >> b >> c ;
+        q [ i ].sett ( a , b , c ) ;
+    }
+    /*
+    FORN ( i , 1 , m ) {
+        if ( cauta ( i ) ) {
+            cout << i << '\n' ;
+            //exit ( 0 ) ;
+        }
+    }
+    */
+    int st = 1 ;
+    int dr = m ;
+    int found = -1 ;
+    while ( st <= dr )
+    {
+        int mij = ( st + dr ) >> 1 ;
+        if ( cauta ( mij ) ) {
+            dr = mij - 1 ;
+            found = mij ;
+        }
+        else {
+            st = mij + 1 ;
+        }
+    }
+    cout << found << '\n' ;
+    return 0;
+}
