@@ -1,0 +1,329 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "hardtask.in" ;
+const char OUT [ ] = "hardtask.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 1e5 + 14 ;
+ 
+vector < int > gr [ MAX ] ;
+ 
+vector < pair < int , int > > M ;
+ 
+bitset < MAX > viz ;
+ 
+int sub [ MAX ] ;
+int lvl [ MAX ] ;
+int father [ MAX ] ;
+int euler [ MAX * 4 ] ;
+int prima [ MAX ] ;
+int last [ MAX ] ;
+int cate ;
+int payer [ MAX ] ;
+ 
+int lant [ MAX ] ;
+int pozitie [ MAX ] ;
+vector < int > hpd [ MAX ] ;
+int nr ;
+ 
+int maxim [ MAX ] ;
+int produce [ MAX ] ;
+ 
+int lista [ MAX * 20 ] ;
+int cate_lcauri ;
+ 
+vector < int > graf [ MAX ] ;
+ 
+int st [ MAX ] ;
+int vf ;
+int BOSSK ;
+ 
+int v [ MAX ] ;
+ 
+inline void dfs ( int nod , int tata , int level )
+{
+    viz [ nod ] = 1 ;
+    sub [ nod ] = 1 ;
+    lvl [ nod ] = level ;
+    father [ nod ] = tata ;
+    ++ cate ;
+    euler [ cate ] = nod ;
+    prima [ nod ] = cate ;
+    int heavy = 0 ;
+    for ( auto x : gr [ nod ] )
+    {
+        if ( viz [ x ] == 1 ) continue ;
+        if ( x == tata ) continue ;
+        dfs ( x , nod , level + 1 ) ;
+        sub [ nod ] += sub [ x ] ;
+        if ( sub [ x ] > sub [ heavy ] ) {
+            heavy = x ;
+        }
+    }
+    ++ cate ;
+    euler [ cate ] = nod ;
+    last [ nod ] = cate ;
+    if ( sub [ nod ] == 1 ) {
+        ++ nr ;
+        hpd [ nr ].pb ( 0 ) ;
+        hpd [ nr ].pb ( nod ) ;
+        lant [ nod ] = nr ;
+        pozitie [ nod ] = 1 ;
+        return ;
+    }
+    lant [ nod ] = lant [ heavy ] ;
+    hpd [ lant [ nod ] ].pb ( nod ) ;
+    pozitie [ nod ] = hpd [ lant [ nod ] ].size ( ) - 1 ;
+}
+ 
+long long aib [ MAX * 4 ] ;
+ 
+int lsb ( int x )
+{
+    return x & -x ;
+}
+ 
+inline void update ( int poz , int val )
+{
+    for ( ; poz <= cate ; poz += lsb ( poz ) ) {
+        aib [ poz ] += val ;
+    }
+}
+ 
+inline long long Q ( int poz )
+{
+    long long sum = 0 ;
+    while ( poz ) {
+        sum += aib [ poz ] ;
+        poz -= lsb ( poz ) ;
+    }
+    return sum ;
+}
+ 
+struct cmp
+{
+    bool operator ( ) ( const int &a , const int &b ) const
+    {
+        return prima [ a ] < prima [ b ] ;
+    }
+};
+ 
+bitset < MAX > vizitat ;
+ 
+map < int , int > H [ MAX ] ;
+int cate_mapuri ;
+int subarbore [ MAX ] ;
+int carac [ MAX ] ;
+int target [ MAX ] ;
+ 
+long long ANSWER = 0 ;
+ 
+inline void dfs ( int nod )
+{
+    vizitat [ nod ] = 1 ;
+    subarbore [ nod ] = 1 ;
+    int heavy = 0 ;
+    for ( auto x : graf [ nod ] )
+    {
+        if ( vizitat [ x ] ) continue ;
+        dfs ( x ) ;
+ 
+        subarbore [ nod ] += subarbore [ x ] ;
+        if ( subarbore [ x ] > subarbore [ heavy ] ) {
+            heavy = x ;
+        }
+    }
+    if ( heavy == 0 ) {
+        carac [ nod ] = ++ cate_mapuri ;
+    }
+    else {
+        carac [ nod ] = carac [ heavy ] ;
+    }
+    int s = Q ( prima [ nod ] ) % BOSSK ;
+    if ( target [ nod ] )
+    {
+        ANSWER = ANSWER + H [ carac [ nod ] ] [ s ] ;
+        H [ carac [ nod ] ] [ s ] ++ ;
+    }
+    for ( auto x : graf [ nod ] )
+    {
+        if ( x == heavy ) continue ;
+ 
+        for ( auto y : H [ carac [ x ] ] ) {
+            if ( H [ carac [ nod ] ] [ ( 2LL * s - y.first + BOSSK ) % BOSSK ] ) {
+                ANSWER = ANSWER + 1LL * y.second *  H [ carac [ nod ] ] [ ( 2LL * s - y.first + BOSSK ) % BOSSK ] ;
+            }
+        }
+        for ( auto y : H [ carac [ x ] ] ) {
+            H [ carac [ nod ] ] [ y.first ] += y.second ;
+        }
+    }
+}
+ 
+inline void __prepare ( int n )
+{
+    FORN ( i , 1 , n )
+    {
+        int node = v [ i ] ;
+        int last = node ;
+        while ( 1 )
+        {
+            if ( node == 0 ) break ;
+            int cur = lant [ node ] ;
+            if ( maxim [ cur ] <= lvl [ node ] ) {
+                maxim [ cur ] = lvl [ node ] ;
+                produce [ cur ] = lant [ last ] ;
+            }
+            last = node ;
+            ///int aux = hpd [ lant [ node ] ] [ 1 ] ;
+            node = father [ hpd [ lant [ node ] ] [ hpd [ lant [ node ] ].size ( ) - 1 ] ] ;
+        }
+    }
+    cate_lcauri = 0 ;
+    FORN ( i , 1 , n )
+    {
+        int node = v [ i ] ;
+        int last = node ;
+        while ( 1 )
+        {
+            if ( node == 0 ) break ;
+            int cur = lant [ node ] ;
+            if ( maxim [ cur ] > lvl [ node ] ) {
+                ++ cate_lcauri ;
+                lista [ cate_lcauri ] = node ;
+            }
+            else if ( maxim [ cur ] == lvl [ node ] and produce [ cur ] != lant [ last ] ) {
+                ++ cate_lcauri ;
+                lista [ cate_lcauri ] = node ;
+            }
+            last = node ;
+            node = father [ hpd [ lant [ node ] ] [ hpd [ lant [ node ] ].size ( ) - 1 ] ] ;
+        }
+    }
+    FORN ( i , 1 , n )
+    {
+        ++ cate_lcauri ;
+        lista [ cate_lcauri ] = v [ i ] ;
+        target [ v [ i ] ] = 1 ;
+    }
+    sort ( lista + 1 , lista + cate_lcauri + 1 ) ;
+    int cc = 0 ;
+    int lasts = -1 ;
+    FORN ( i , 1 , cate_lcauri )
+    {
+        if ( lista [ i ] != lasts ) {
+            ++ cc ;
+            lista [ cc ] = lista [ i ] ;
+            lasts = lista [ i ] ;
+        }
+    }
+    sort ( lista + 1 , lista + cc + 1 , cmp ( ) ) ;
+    vf = 1 ;
+    st [ vf ] = lista [ 1 ] ;
+    FORN ( i , 2 , cc )
+    {
+        while ( vf and !( prima [ st [ vf ] ] <= prima [ lista [ i ] ] and last [ lista [ i ] ] <= last [ st [ vf ] ] ) )
+            -- vf ;
+        assert ( vf ) ;
+        graf [ st [ vf ] ].pb ( lista [ i ] ) ;
+        graf [ lista [ i ] ].pb ( st [ vf ] ) ;
+        ///cout << "trag muchie de la " << st [ vf ] << " la " << lista [ i ] << '\n' ;
+        ++ vf ;
+        st [ vf ] = lista [ i ] ;
+    }
+    cate_mapuri = 0 ;
+    /// solve
+    dfs ( lista [ 1 ] ) ;
+    FORN ( i , 1 , cc ) {
+        graf [ lista [ i ] ].clear ( ) ;
+        vizitat [ lista [ i ] ] = 0 ;
+        subarbore [ lista [ i ] ] = 0 ;
+        carac [ lista [ i ] ] = 0 ;
+        target [ lista [ i ] ] = 0 ;
+        maxim [ lant [ lista [ i ] ] ] = 0 ;
+        produce [ lant [ lista [ i ] ] ] = 0 ;
+    }
+    FORN ( i , 1 , cate_mapuri ) {
+        H [ i ].clear ( ) ;
+    }
+}
+ 
+int main ( void )
+{
+    int n , m ;
+    cin >> n >> m ;
+    ///int radacina = 1 ;
+    FORN ( i , 2 , n )
+    {
+        int x , cost ;
+        cin >> x >> cost ;
+        gr [ x ].pb ( i ) ;
+        gr [ i ].pb ( x ) ;
+        M.pb ( mp ( i , cost ) ) ;
+        payer [ i ] = cost ;
+    }
+    dfs ( 1 , 0 , 1 ) ;
+    //FORN ( i , 1 , nr ) {
+    //    cout << hpd [ i ] [ 1 ] << '\n' ;
+    //}
+    //return 0 ;
+    for ( auto x : M ) {
+        update ( prima [ x.first ] , x.second ) ;
+        update ( last [ x.first ] , -x.second ) ;
+    }
+    while ( m -- )
+    {
+        int tip ;
+        cin >> tip ;
+        if ( tip == 1 ) {
+            int nod , cost ;
+            cin >> nod >> cost ;
+            //int S = Q ( prima [ nod ] ) - Q ( prima [ nod ] - 1 ) ;
+            update ( prima [ nod ] , -payer [ nod ] ) ;
+            update ( last [ nod ] , payer [ nod ] ) ;
+            update ( prima [ nod ] , cost ) ;
+            update ( last [ nod ] , -cost ) ;
+            payer [ nod ] = cost ;
+        }
+        else {
+            int nrr , k ;
+            cin >> nrr >> k ;
+            BOSSK = k ;
+            ANSWER = 0 ;
+            FORN ( i , 1 , nrr ) {
+                cin >> v [ i ] ;
+            }
+            __prepare ( nrr ) ;
+            cout << ANSWER << '\n' ;
+        }
+    }
+    return 0;
+}
