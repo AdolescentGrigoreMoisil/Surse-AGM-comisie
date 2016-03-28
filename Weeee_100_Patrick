@@ -1,0 +1,97 @@
+/**
+ * Code by Patrick Sava
+ * "Spiru Haret" National College of Bucharest
+ **/
+ 
+# include "fstream"
+# include "cstring"
+# include "vector"
+# include "queue"
+# include "bitset"
+# include "algorithm"
+# include "map"
+# include "set"
+# include "unordered_map"
+# include "deque"
+# include "string"
+# include "iomanip"
+# include "cmath"
+# include "stack"
+# include "cassert"
+ 
+const char IN [ ] =  "weeee.in" ;
+const char OUT [ ] = "weeee.out" ;
+ 
+using namespace std ;
+ 
+# define pb push_back
+# define mp make_pair
+# define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
+# define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
+ 
+ifstream cin ( IN ) ;
+ofstream cout ( OUT ) ;
+ 
+const int MAX = 2e5 + 14 ;
+ 
+bool ok [ MAX ] ;
+char sir [ MAX ] ;
+ 
+long long pref [ MAX ] ;
+long long suff [ MAX ] ;
+ 
+int solve ( int n , long long dp [ ] )
+{
+    int w = 0 ;
+    int e = 0 ;
+    FORN ( i , 1 , n ) {
+        if ( sir [ i ] == 'W' ) {
+            ok [ i ] = 1 ;
+            w ++ ;
+        }
+        else {
+            e ++ ;
+        }
+        ok [ i ] |= ok [ i - 1 ] ;
+    }
+    if ( !e or !w ) {
+        cout << -1 << '\n' ;
+        return 0 ;
+    }
+    int care = 1 ;
+    FORN ( i , 1 , n ) {
+        dp [ i ] = dp [ i - 1 ] ;
+        if ( sir [ i ] == 'W' ) {
+            dp [ i ] = dp [ i ] + i - care ;
+            ++ care ;
+        }
+    }
+    return 1 ;
+}
+ 
+int main()
+{
+    int n ;
+    cin >> n ;
+    cin >> ( sir + 1 ) ;
+    int a = solve ( n , pref ) ;
+    if ( !a ) {
+        exit ( 0 ) ;
+    }
+    memset ( ok , 0 , sizeof ( ok ) ) ;
+    reverse ( sir + 1 , sir + n + 1 ) ;
+    a = solve ( n , suff ) ;
+    if ( !a ) {
+        exit ( 0 ) ;
+    }
+    reverse ( suff + 1 , suff + n + 1 ) ;
+    reverse ( sir + 1 , sir + n + 1 ) ;
+    long long result = 1LL << 60 ;
+    FORN ( i , 1 , n ) {
+        if ( sir [ i ] == 'W' ) {
+            result = min ( result , pref [ i ] + suff [ i + 1 ] ) ;
+        }
+    }
+    cout << result << '\n' ;
+    return 0;
+}
