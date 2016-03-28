@@ -1,0 +1,35 @@
+#include <cstdio>
+#include <algorithm>
+#include <cassert>
+ 
+using namespace std;
+ 
+long long d[200010];
+char v[200010];
+ 
+int main()
+{
+    freopen("weeee.in", "r", stdin);
+    freopen("weeee.out", "w", stdout);
+    int n,s=0,a=0,b=0;
+    long long sol=0,rez=10000000000000000;
+    scanf("%d\n%s",&n,v+1);
+    assert(1<=n && n<=200000);
+    for(int i=1;i<=n;i++)
+    {
+        assert(v[i]=='W' || v[i]=='E');
+        d[i]=d[i-1];
+        if(v[i]=='E') {s++;a=1;}
+        else {d[i]+=s;b=1;}
+    }
+    s=0;
+    for(int i=n;i;i--)
+    {
+        if(v[i]=='W') rez=min(rez,d[i]+sol);
+        if(v[i]=='E') s++;
+        else sol+=s;
+    }
+    if(!a || !b) printf("-1");
+    else printf("%lld",rez);
+    return 0;
+}
