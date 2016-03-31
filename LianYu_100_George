@@ -57,10 +57,10 @@ void solve(int nod,int tata)
     for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
         if(*it!=tata)
         {
+            for(int i=min(k,s);i>=0;i--)
+                for(int j=min(k-i,size[*it]);j;j--)
+                    d[nod][i+j]=min(d[nod][i+j],d[nod][i]+d[*it][j]);
             s+=size[*it];
-            for(int i=min(k,s);i;i--)
-                for(int j=min(i,size[*it]);j;j--)
-                    d[nod][i]=min(d[nod][i],d[nod][i-j]+d[*it][j]);
         }
     if(nod<=n)
         for(int i=min(k,size[nod]);i;i--) d[nod][i]=d[nod][i-1]+cost[nod];
