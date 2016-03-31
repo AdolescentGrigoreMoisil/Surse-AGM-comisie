@@ -2,7 +2,7 @@
  * Code by Patrick Sava
  * "Spiru Haret" National College of Bucharest
  **/
- 
+
 # include "fstream"
 # include "cstring"
 # include "vector"
@@ -18,40 +18,40 @@
 # include "cmath"
 # include "stack"
 # include "cassert"
- 
+
 const char IN [ ] =  "lianyu.in" ;
 const char OUT [ ] = "lianyu.out" ;
- 
+
 using namespace std ;
- 
+
 # define pb push_back
 # define mp make_pair
 # define FORN( a , b , c ) for ( register int a = b ; a <= c ; ++ a )
 # define FORNBACK( a , b , c ) for ( register int a = b ; a >= c ; -- a )
- 
+
 ifstream cin ( IN ) ;
 ofstream cout ( OUT ) ;
- 
+
 const int MAX = 3e3 + 14 ;
- 
+
 vector < int > gr [ MAX ] ;
 vector < int > graf [ MAX << 1 ] ;
- 
+
 int sub [ MAX << 1 ] ;
 int dp [ MAX << 1 ] [ MAX ] ;
- 
+
 bitset < MAX > viz ;
 bitset < MAX * 2 > virgin ;
 bitset < MAX * 2 > fake ;
- 
+
 stack < pair < int , int > > S ;
- 
+
 int level [ MAX ] ;
 int low [ MAX ] ;
 int cost [ MAX ] ;
- 
+
 int fakes ;
- 
+
 inline void baga ( int a , int b )
 {
     ++ fakes ;
@@ -68,7 +68,7 @@ inline void baga ( int a , int b )
     graf [ fakes ].pb ( a ) ;
     graf [ a ].pb ( fakes ) ;
 }
- 
+
 inline void dfs ( int nod , int tata , int lvl )
 {
     viz [ nod ] = 1 ;
@@ -92,7 +92,7 @@ inline void dfs ( int nod , int tata , int lvl )
         }
     }
 }
- 
+
 inline void dfsdp ( int nod , int boss , int k )
 {
     virgin [ nod ] = 1 ;
@@ -103,17 +103,19 @@ inline void dfsdp ( int nod , int boss , int k )
         dfsdp ( x , nod , k ) ;
         sub [ nod ] += sub [ x ] ;
     }
+    int s = 0 ;
     for ( auto x : graf [ nod ] )
     {
         if ( x == boss ) {
             continue ;
         }
-        FORNBACK ( i , min ( k , sub [ nod ] ) , 1 )
+        FORNBACK ( i , min ( k , s ) , 0 )
         {
-            FORNBACK ( j , min ( sub [ x ], i ) , 1 ) {
-                dp [ nod ] [ i ] = min ( dp [ nod ] [ i ] , dp [ nod ] [ i - j ] + dp [ x ] [ j ] ) ;
+            FORNBACK ( j , min ( k - i , sub [ x ] ) , 1 ) {
+                dp [ nod ] [ i + j ] = min ( dp [ nod ] [ i + j ] , dp [ nod ] [ i ] + dp [ x ] [ j ] ) ;
             }
         }
+        s = s + sub [ x ] ;
     }
     if ( !fake [ nod ] ) {
         FORNBACK ( i , min ( k , sub [ nod ] ) , 1 ) {
@@ -121,7 +123,7 @@ inline void dfsdp ( int nod , int boss , int k )
         }
     }
 }
- 
+
 int main ( void )
 {
     int n , m , k ;
