@@ -1,0 +1,176 @@
+#include <cstdio>
+#include <vector>
+#include <map>
+#include <algorithm>
+ 
+using namespace std;
+ 
+const int MaxN=100010,Maxlog=19;
+vector<int> v[MaxN],g[MaxN];
+map<int,int> d[MaxN];
+int first[MaxN],last[MaxN],size[MaxN],val[MaxN],n,nr;
+int rmq[Maxlog][2*MaxN],logg[2*MaxN],first_rmq[MaxN],niv[MaxN],nr_rmq;
+int dpoz[MaxN],v1[MaxN],v2[MaxN],v3[MaxN],dnr,k;
+long long aib[MaxN],sol=0;
+char bagat[MaxN],vaz[MaxN];
+ 
+void dfs(int nod,int lev)
+{
+    first[nod]=++nr;
+    niv[nod]=lev;
+    rmq[0][++nr_rmq]=nod;
+    first_rmq[nod]=nr_rmq;
+    for(vector<int>::iterator it=v[nod].begin();it!=v[nod].end();it++)
+    {
+        dfs(*it,lev+1);
+        rmq[0][++nr_rmq]=nod;
+    }
+    last[nod]=nr;
+}
+ 
+void aib_update(int i,int s)
+{
+    for(;i<=n;i+=i&(-i)) aib[i]+=s;
+}
+ 
+long long aib_query(int i)
+{
+    long long s=0;
+    for(;i>0;i-=i&(-i)) s+=aib[i];
+    return s;
+}
+ 
+int cmp(int a,int b)
+{
+    return first[a]<first[b];
+}
+ 
+int lca(int x,int y)
+{
+    x=first_rmq[x];y=first_rmq[y];
+    if(x>y) swap(x,y);
+    int lim=logg[y-x+1];
+    if(niv[rmq[lim][x]]<niv[rmq[lim][y-(1<<lim)+1]]) return rmq[lim][x];
+    else return rmq[lim][y-(1<<lim)+1];
+}
+ 
+int get_lcas_tree(int nr,int v1[])
+{
+    int nr2=0,nr3=0;
+    for(int i=1;i<=nr;i++)
+    {
+        v2[++nr2]=v1[i];
+        bagat[v1[i]]=1;
+    }
+    sort(v1+1,v1+1+nr,cmp);
+    for(int i=1;i<nr;i++)
+    {
+        int nod=lca(v1[i],v1[i+1]);
+        if(!bagat[nod])
+        {
+            v2[++nr2]=nod;
+            bagat[nod]=1;
+        }
+    }
+    for(int i=1;i<=nr2;i++) bagat[v2[i]]=0;
+    sort(v2+1,v2+1+nr2,cmp);
+    v3[++nr3]=v2[1];
+    for(int i=2;i<=nr2;i++)
+    {
+        while(last[v3[nr3]]<first[v2[i]]) nr3--;
+        g[v3[nr3]].push_back(v2[i]);
+        v3[++nr3]=v2[i];
+    }
+    return v2[1];
+}
+ 
+void solve_dfs(int nod)
+{
+    size[nod]=1;
+    int heavy=0;
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+    {
+        solve_dfs(*it);
+        size[nod]+=size[*it];
+        if(size[*it]>size[heavy]) heavy=*it;
+    }
+    if(!heavy) dpoz[nod]=++dnr;
+    else dpoz[nod]=dpoz[heavy];
+    int s=aib_query(first[nod])%k;
+    if(vaz[nod])
+    {
+        sol+=d[dpoz[nod]][s];
+        d[dpoz[nod]][s]++;
+    }
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+        if(*it!=heavy)
+        {
+            for(map<int,int>::iterator it1=d[dpoz[*it]].begin();it1!=d[dpoz[*it]].end();it1++)
+                if(d[dpoz[nod]].count((2LL*s-it1->first+k)%k)) sol+=1LL*it1->second*d[dpoz[nod]][(2LL*s-it1->first+k)%k];
+            for(map<int,int>::iterator it1=d[dpoz[*it]].begin();it1!=d[dpoz[*it]].end();it1++)
+                d[dpoz[nod]][it1->first]+=it1->second;
+        }
+}
+ 
+void dfs_clear(int nod)
+{
+    for(vector<int>::iterator it=g[nod].begin();it!=g[nod].end();it++)
+        dfs_clear(*it);
+    g[nod].clear();
+    d[dpoz[nod]].clear();
+}
+ 
+int main()
+{
+    freopen("hardtask.in", "r", stdin);
+    freopen("hardtask.out", "w", stdout);
+    int m,x;
+    scanf("%d%d",&n,&m);
+    for(int i=2;i<=n;i++)
+    {
+        scanf("%d%d",&x,&val[i]);
+        v[x].push_back(i);
+    }
+    dfs(1,1);
+    for(int i=2;i<=nr_rmq;i++) logg[i]=logg[i/2]+1;
+    for(int i=1;i<=logg[nr_rmq];i++)
+    {
+        int lim=nr_rmq-(1<<(i-1))+1;
+        for(int j=1;j<=lim;j++)
+            if(niv[rmq[i-1][j]]<niv[rmq[i-1][j+(1<<(i-1))]]) rmq[i][j]=rmq[i-1][j];
+            else rmq[i][j]=rmq[i-1][j+(1<<(i-1))];
+    }
+    for(int i=2;i<=n;i++)
+    {
+        aib_update(first[i],val[i]);
+        aib_update(last[i]+1,-val[i]);
+    }
+    for(;m;m--)
+    {
+        int tip,nod,s,nr;
+        scanf("%d",&tip);
+        if(tip==1)
+        {
+            scanf("%d%d",&nod,&s);
+            aib_update(first[nod],s-val[nod]);
+            aib_update(last[nod]+1,val[nod]-s);
+            val[nod]=s;
+        }
+        else
+        {
+            scanf("%d%d",&nr,&k);
+            for(int i=1;i<=nr;i++)
+            {
+                scanf("%d",&v1[i]);
+                vaz[v1[i]]=1;
+            }
+            int rad=get_lcas_tree(nr,v1);
+            sol=dnr=0;
+            solve_dfs(rad);
+            dfs_clear(rad);
+            for(int i=1;i<=nr;i++) vaz[v1[i]]=0;
+            printf("%lld\n",sol);
+        }
+    }
+    return 0;
+}
