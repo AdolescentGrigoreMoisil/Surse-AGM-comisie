@@ -45,9 +45,14 @@ int main ( void )
                 secundar [ i ] [ j ] = 0 ;
                 principal [ i ] [ j ] = 0 ;
             }
+        bool ok = false ;
         FORN ( i , 1 , n )
-            FORN ( j , 1 , n )
+            FORN ( j , 1 , n ) {
                 fin >> mat [ i ] [ j ] ;
+                if ( mat [ i ] [ j ] <= S ) {
+                    ok = true ;
+                }
+            }
         FORN ( i , 1 , n )
             FORN ( j , 1 , n )
             {
@@ -69,7 +74,7 @@ int main ( void )
                 int scadx = 0 ;
                 int scady = 0 ;
                 while ( local_sum <= S ){
-                    ++ CET ;
+                    CET += 2 ;
                     local_sum = 0 ;
                     if ( CET & 1 )
                     {
@@ -93,7 +98,50 @@ int main ( void )
                     if ( CET & 1 )
                     local_sum -= mat [ scadx ] [ scady ] ;
                 }
-                -- CET ;
+                CET -= 2 ;
+            }
+        }
+ 
+        int CET2 = CET ;
+        if ( ok == false ) {
+            cout << CET << '\n' ;
+            continue ;
+        }
+        CET = 1 ;
+        FORN ( i , 1 , n )
+        {
+            FORN ( j , 1 , n )
+            {
+                /// coltul stanga jos in ( i , j )
+                int local_sum = 0 ;
+                int scadx = 0 ;
+                int scady = 0 ;
+                while ( local_sum <= S ){
+                    CET += 2 ;
+                    local_sum = 0 ;
+                    if ( CET & 1 )
+                    {
+                        scadx = i - CET / 2 ;
+                        scady = j + CET / 2 ;
+                    }
+                    int secundar_upper_i = i - CET + 1 ;
+                    int secundar_upper_j = j + CET - 1 ;
+                    int secundar_lower_i = i + 1 ;
+                    int secundar_lower_j = j - 1 ;
+                    if ( inside ( secundar_upper_i , secundar_upper_j , n ) == 0 ) break ;
+                    if ( inside ( secundar_lower_i - 1 , secundar_lower_j + 1 , n ) == 0 ) break ;
+                    int principal_lower_i = i ;
+                    int principal_lower_j = j + CET - 1 ;
+                    int principal_upper_i = i - CET ;
+                    int principal_upper_j = j - 1 ;
+                    if ( inside ( principal_lower_i , principal_lower_j , n ) == 0 ) break ;
+                    if ( inside ( principal_upper_i + 1 , principal_upper_j + 1 , n ) == 0 ) break ;
+                    local_sum += secundar [ secundar_upper_i ] [ secundar_upper_j ] - secundar [ secundar_lower_i ] [ secundar_lower_j ] ;
+                    local_sum += principal [ principal_lower_i ] [ principal_lower_j ] - principal [ principal_upper_i ] [ principal_upper_j ] ;
+                    if ( CET & 1 )
+                    local_sum -= mat [ scadx ] [ scady ] ;
+                }
+                CET -= 2 ;
             }
         }
  
@@ -107,7 +155,7 @@ int main ( void )
             }
         }
         if ( tests == 6 )*/
-        fout << CET << '\n' ;
+        fout << max ( CET , CET2 ) << '\n' ;
     }
     return 0;
 }
