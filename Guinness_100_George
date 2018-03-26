@@ -1,0 +1,32 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+char sir[100010];
+ 
+int main()
+{
+    freopen("guinness.in", "r", stdin);
+    freopen("guinness.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        int a,mod;
+        scanf("%d %s %d",&a,sir+1,&mod);
+        int n=strlen(sir+1),p=1;
+        for(int i=n;i;i--)
+        {
+            for(int j=1;j<=sir[i]-'0';j++) p=(1LL*p*a)%mod;
+            int x=1;
+            for(int j=1;j<=10;j++) x=(1LL*x*a)%mod;
+            a=x;
+        }
+        printf("%d\n",p);
+    }
+    return 0;
+}

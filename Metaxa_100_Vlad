@@ -1,0 +1,355 @@
+/*
+ * Vlad-Andrei Munteanu
+ * University of Manchester
+ * Problem: Metaxa
+ * Author: Andrei Dumitrescu
+ * Expected: Accepted
+ */
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+//declarations - begin
+pair <int, int> source;
+vector <vector <pair <int, int>>> polygons;
+//declarations - end
+ 
+long long determinant (pair <int, int> source, pair <int, int> A, pair <int, int> B) {
+    return (1LL * source.first * A.second + 1LL * A.first * B.second + 1LL * B.first * source.second) -
+           (1LL * source.first * B.second + 1LL * A.first * source.second + 1LL * B.first * A.second);
+} //determinant
+ 
+long long square (int value) {
+    return 1LL * value * value;
+} //square
+ 
+long long squareOfDistance (pair <int, int> A, pair <int, int> B) {
+    return square(A.first - B.first) + square(A.second - B.second);
+}
+ 
+class CompareByDeterminant
+{
+public:
+    bool operator () (const pair <int, int>& A, const pair <int, int>& B) const {
+        long long det = determinant(source, A, B);
+        if (det > 0LL) {
+            return true;
+        }
+        if (det < 0LL) {
+            return false;
+        }
+        return squareOfDistance(source, A) < squareOfDistance(source, B);
+    }
+};
+//setSource (currentSource)
+//operator ()
+ 
+bool areSignesEqual (int firstSign, int secondSign) {
+    return (firstSign * secondSign == 1);
+}
+ 
+int signOf (long long value) {
+    if (value > 0LL) {
+        return 1;
+    }
+    if (value == 0LL) {
+        return 0;
+    }
+    return -1;
+}
+int cnt;
+ 
+bool areIntersected (pair <int, int> A, pair <int, int> B, pair <int, int> C, pair <int, int> D) {
+    return !areSignesEqual(signOf(determinant(C, A, B)), signOf(determinant(D, A, B))) and
+            !areSignesEqual(signOf(determinant(A, C, D)), signOf(determinant(B, C, D)));
+}
+ 
+bool isBetween (int left, int value, int right) {
+    return left <= value and value <= right;
+}
+ 
+bool areOnTheSameLine (pair <int, int> A, pair <int, int> B, pair <int, int> C, pair <int, int> D) {
+    return (determinant(A, C, D) == 0LL and determinant(B, C, D) == 0LL);
+}
+ 
+long long mathFunction (long long a, long long b, long long c, long long x) {
+    return - (a * x + c) / b;
+}
+ 
+pair <int, int> getIntersection (pair <int, int> A, pair <int, int> B, pair <int, int> C, pair <int, int> D) {
+    if (determinant(A, C, D) == 0LL) {
+        return A;
+    }
+    if (determinant(B, C, D) == 0LL) {
+        return B;
+    }
+    if (determinant(C, A, B) == 0LL) {
+        return C;
+    }
+    if (determinant(D, A, B) == 0LL) {
+        return D;
+    }
+    if (A.first - B.first == 0LL) {
+        swap(A, C);
+        swap(B, D);
+    }
+    assert (A.first != B.first);
+    if (A.first > B.first) {
+        swap(A, B);
+    }
+    long long a1 = B.second - A.second;
+    long long b1 = A.first - B.first;
+    long long c1 = 1LL * A.first * (A.second - B.second) + 1LL * A.second * (B.first - A.first);
+    long long gcdParameters = __gcd(a1, __gcd(b1, c1));
+    a1 /= gcdParameters;
+    b1 /= gcdParameters;
+    c1 /= gcdParameters;
+    int leftX = A.first;
+    int rightX = B.first;
+    int gcd = __gcd (abs(A.first - B.first), abs(A.second - B.second));
+    int add = 0LL;
+    int dif = rightX - leftX;
+    int step = (rightX - leftX) / gcd;
+    int log = 0;
+    while ((1LL << log) * step < dif) {
+        log += 1;
+    }
+    for (int power = log; power >= 0; --power) {
+        if (leftX + add + (1 << power) * step <= rightX and !areIntersected(A, make_pair(leftX + add + (1 << power) * step, mathFunction(a1, b1, c1, leftX + add + (1 << power) * step)), C, D )) {
+            add += (1 << power) * step;
+        }
+    }
+    add += step;
+    return make_pair(leftX + add, mathFunction(a1, b1, c1, leftX + add));
+};
+ 
+vector <pair <int, int>> convexHall (vector <pair <int, int>>& polygon) {
+    if (polygon.size() <= 1) {
+        return polygon;
+    }
+    vector <pair <int, int>> stack;
+    for (auto& point : polygon) {
+        if (polygon[0].first > point.first) {
+            swap (polygon[0], point);
+        }
+        if (polygon[0].first == point.first and polygon[0].second > point.second) {
+            swap (polygon[0], point);
+        }
+    }
+    source = polygon[0];
+    sort (polygon.begin(), polygon.end(), CompareByDeterminant());
+    assert (source == polygon[0]);
+    polygon.push_back(source);
+    for (auto point : polygon) {
+        while (stack.size() >= 2) {
+            pair <int, int> topOfTheStack = stack.back();
+            stack.pop_back();
+            if (determinant(stack.back(), topOfTheStack, point) <= 0LL) {
+                continue;
+            }
+            stack.push_back(topOfTheStack);
+            break;
+        }
+        stack.push_back(point);
+    }
+    stack.pop_back();
+    polygon.pop_back();
+    if (stack.size() == 1 and stack.back() != polygon.back()) {
+        stack.push_back(polygon.back());
+    }
+    return stack;
+};
+ 
+bool areSimilar (vector <pair <int, int>>& firstPolygon, vector <pair <int, int>>& secondPolygon) {
+    if (firstPolygon.size() != secondPolygon.size()) {
+        return false;
+    }
+    if (firstPolygon.empty()) {
+        return false;
+    }
+    int startingIndex;
+    int currentSize = firstPolygon.size();
+    for (int i = 0; i < currentSize; ++i) {
+        if (firstPolygon[0] == secondPolygon[i]) {
+            startingIndex = i;
+            break;
+        }
+    }
+    for (int i = 0; i < currentSize; ++i) {
+        if (firstPolygon[i] != secondPolygon[(startingIndex + i) % currentSize]) {
+            return false;
+        }
+    }
+    return true;
+}
+ 
+bool isInside (pair <int, int> A, vector <pair <int, int>>& polygon) {
+    if (polygon.empty()) {
+        return false;
+    }
+    int currentSize = polygon.size();
+    for (int i = 0; i < currentSize; ++i) {
+        if (determinant(A, polygon[i], polygon[(i + 1) % currentSize]) < 0) {
+            return false;
+        }
+        if (determinant(A, polygon[i], polygon[(i + 1) % currentSize]) == 0) {
+            if (!isBetween(polygon[i].first, A.first, polygon[(i + 1) % currentSize].first)) {
+                return false;
+            }
+            if (!isBetween(polygon[i].second, A.second, polygon[(i + 1) % currentSize].second)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+vector <pair <int, int>> intersection (vector <pair <int, int>> firstPolygon, vector <pair <int, int>>& secondPolygon) {
+    vector <pair <int, int>> resultedPolygon;
+    int numberOfPointsFirst = firstPolygon.size();
+    int numberOfPointsSecond = secondPolygon.size();
+    for (int i = 0; i < numberOfPointsFirst; ++i) {
+        for (int j = 0; j < numberOfPointsSecond; ++j) {
+            pair <int, int> A = firstPolygon[i];
+            pair <int, int> B = firstPolygon[(i + 1) % numberOfPointsFirst];
+            pair <int, int> C = secondPolygon[j];
+            pair <int, int> D = secondPolygon[(j + 1) % numberOfPointsSecond];
+            if (!areIntersected(A, B, C, D)) {
+                continue;
+            }
+            if (areOnTheSameLine(A, B, C, D)) {
+                vector <pair <int, int>> auxiliar;
+                auxiliar.push_back(A);
+                auxiliar.push_back(B);
+                auxiliar.push_back(C);
+                auxiliar.push_back(D);
+                sort (auxiliar.begin(), auxiliar.end());
+                if ((auxiliar[0] == A and auxiliar[1] == B) or
+                    (auxiliar[0] == B and auxiliar[1] == A) or
+                    (auxiliar[0] == C and auxiliar[1] == D) or
+                    (auxiliar[0] == D and auxiliar[1] == C)) {
+                    continue;
+                }
+                resultedPolygon.push_back(auxiliar[1]);
+                resultedPolygon.push_back(auxiliar[2]);
+                continue;
+            }
+            pair <int, int> intersect = getIntersection(A, B, C, D);
+            resultedPolygon.push_back(intersect);
+        }
+    }
+    for (auto point : firstPolygon) {
+        if (isInside(point, secondPolygon)) {
+            resultedPolygon.push_back(point);
+        }
+    }
+    for (auto point : secondPolygon) {
+        if (isInside(point, firstPolygon)) {
+            resultedPolygon.push_back(point);
+        }
+    }
+    return convexHall(resultedPolygon);
+};
+ 
+long long doubleOfArea (vector <pair <int, int>>& polygon) {
+    if (polygon.empty()) {
+        return 0;
+    }
+    long long answer = 0LL;
+    pair <int, int> source = {0, 0};
+    int currentSize = polygon.size();
+    for (int i = 0; i < currentSize; ++i) {
+        answer += determinant(source, polygon[i], polygon[(i + 1) % currentSize]);
+    }
+    return answer;
+}
+ 
+long long pointsOnEdges (vector <pair <int, int>>& polygon) {
+    if (polygon.empty()) {
+        return 0LL;
+    }
+    if (polygon.size() == 1) {
+        return 1LL;
+    }
+    if (polygon.size() == 2) {
+        int first = 0;
+        int second = 1;
+        long long deltaX = abs (polygon[first].first - polygon[second].first);
+        long long deltaY = abs (polygon[first].second - polygon[second].second);
+        long long gcd = __gcd(deltaX, deltaY);
+        return gcd + 1LL;
+    }
+    int currentSize = polygon.size();
+    long long answer = 0;
+    for (int i = 0; i < currentSize; ++i) {
+        int first = i;
+        int second = (i + 1) % currentSize;
+        long long deltaX = abs (polygon[first].first - polygon[second].first);
+        long long deltaY = abs (polygon[first].second - polygon[second].second);
+        long long gcd = __gcd(deltaX, deltaY);
+        answer += gcd;
+    }
+    return answer;
+}
+ 
+long long latticePoints (vector <pair <int, int>>& polygon) {
+    long long doubleArea = doubleOfArea(polygon);
+    long long pointsEdges = pointsOnEdges(polygon);
+    if (doubleArea == 0LL) {
+        return pointsEdges;
+    }
+    assert((doubleArea + 2LL - pointsEdges) % 2 == 0);
+    long long internalPoints = (doubleArea + 2LL - pointsEdges) >> 1;
+    return pointsEdges + internalPoints;
+}
+ 
+bool isPolygonInside (vector <pair <int, int>>& inPolygon, vector <pair <int, int>>& outPolygon) {
+    vector <pair <int, int>> intersectionOfPolygons = intersection(inPolygon, outPolygon);
+    return areSimilar(inPolygon, intersectionOfPolygons);
+}
+ 
+int main() {
+    ifstream fin ("metaxa.in");
+    ofstream fout ("metaxa.out");
+    int numbersOfPolygons, T;
+    fin >> T;
+    while(T)
+    {
+        fin >> numbersOfPolygons;
+        for (int i = 1; i <= numbersOfPolygons; ++i) {
+            vector <pair <int, int>> currentPolygon;
+            int numberOfPoints;
+            fin >> numberOfPoints;
+            for (int j = 1; j <= numberOfPoints; ++j) {
+                int x, y;
+                fin >> x >> y;
+                currentPolygon.emplace_back(x, y);
+            }
+            for(int k = 0 ; k < numberOfPoints; ++k)
+            {
+                int poz1 = k;
+                int poz2 = k + 1;
+                int poz3 = k + 2;
+                poz2 %= currentPolygon.size();
+                poz3 %= currentPolygon.size();
+                assert(determinant(currentPolygon[poz1],currentPolygon[poz2], currentPolygon[poz3]) >= 0);
+            }
+            polygons.push_back(currentPolygon);
+        }
+        long long maximumNumberOfPoints = 0LL;
+        for (int i = 0; i < numbersOfPolygons; ++i) {
+            for (int j = i + 1; j < numbersOfPolygons; ++j) {
+                vector <pair <int, int>> intersect = intersection(polygons[i], polygons[j]);
+                long long currentNumberOfPoints = latticePoints(intersect);
+                if (currentNumberOfPoints > maximumNumberOfPoints ) {
+                    maximumNumberOfPoints = currentNumberOfPoints;
+                }
+            }
+        }
+ 
+        fout << maximumNumberOfPoints <<  '\n';
+        polygons.clear();
+        T--;
+    }
+ 
+    return 0;
+}

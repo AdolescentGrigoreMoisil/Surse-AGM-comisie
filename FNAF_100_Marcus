@@ -1,0 +1,105 @@
+/*
+ * George Marcus
+ * Solutia: O(N) programare dinamica alternativa
+ * AC
+ */
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define MAXP 1000000000
+#define INF 100000000000000000LL
+#define MAXN 200500
+ 
+int N, D;
+int A[MAXN];
+char S[MAXN];
+long long dp[MAXN];
+ 
+ 
+pair<int, long long> solveSingle(int st, int dr, int prevStart) {
+  if (prevStart > A[st]) {
+    return { -1, -1 };
+  }
+  if (prevStart + D >= A[dr]) {
+    return { prevStart + D, D };
+  }
+   
+  long long bestPrev = INF;
+  int prevSeparate = st - 1;
+  for (int i = st; i <= dr; i++) {
+    while (prevSeparate + 1 < i && A[prevSeparate + 1] < A[i] - D) {
+      if (prevSeparate >= st) {
+        bestPrev = min(bestPrev, dp[prevSeparate] - A[prevSeparate + 1]);
+      }
+      prevSeparate++;
+    }
+ 
+    dp[i] = INF;
+ 
+    // start first segment
+    dp[i] = min(dp[i], (long long) max(D, A[i] - A[st]));
+ 
+    // start new segment
+    if (prevSeparate >= st) {
+      dp[i] = min(dp[i], dp[prevSeparate] + D);
+    }
+    dp[i] = min(dp[i], bestPrev + A[i]);
+  }
+ 
+  return { A[dr], dp[dr] };
+}
+ 
+long long solve() {
+  long long ans = 0;
+ 
+  int prevStart = -MAXP;
+  int i = 0;
+  while (i < N) {
+    int st = i;
+    int dr = i;
+    while (dr + 1 < N && S[st] == S[dr + 1]) {
+      dr++;
+    }
+    auto singleAns = solveSingle(st, dr, prevStart);
+    if (singleAns.first == -1) {
+      return -1;
+    }
+    ans += singleAns.second;
+    prevStart = singleAns.first;
+    i = dr + 1;
+  }
+   
+  return ans;
+}
+ 
+int main() {
+  assert(freopen("fnaf.in", "r", stdin));
+  assert(freopen("fnaf.out","w", stdout));
+  cin.sync_with_stdio(false);
+   
+  int T;
+  cin >> T;
+  assert(1 <= T && T <= 30);
+ 
+  int sumN = 0;
+  while (T--) {
+    cin >> N >> D;
+    assert(1 <= N && N <= 200000);
+    assert(1 <= D && D <= 1000000000);
+    for (int i = 0; i < N; i++) {
+      cin >> A[i] >> S[i];
+      assert(1 <= A[i] && A[i] <= 1000000000);
+      assert(A[i] > A[i - 1]);
+      assert(S[i] == 'S' || S[i] == 'D');
+    }
+     
+    long long ans = solve();
+    cout << ans << endl;
+    sumN += N;
+  }
+ 
+  cerr << sumN << endl;
+   
+  return 0;
+}

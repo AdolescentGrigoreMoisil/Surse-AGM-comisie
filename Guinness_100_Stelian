@@ -1,0 +1,36 @@
+/* Stelian Chichirim
+ * Complexitate: O(10 * N)
+ * Expected: AC
+ */
+ 
+#include <cstdio>
+#include <cstring>
+ 
+using namespace std;
+ 
+char exponent[100010];
+ 
+int main()
+{
+    freopen("guinness.in","r",stdin);
+    freopen("guinness.out","w",stdout);
+    int t;
+    scanf("%d\n",&t);
+    for(int test=1;test<=t;test++)
+    {
+        long long base,mod;
+        scanf("%lld %s %lld\n",&base,exponent+1,&mod);
+        int n=strlen(exponent+1);
+        long long sol=1;
+        for(int i=n;i>=1;i--)
+        {
+            for(int j=1;j<=exponent[i]-'0';j++)
+                sol=(1LL*sol*base)%mod;
+            long long nextbase=1;
+            for(int times=1;times<=10;times++) nextbase=(1LL*nextbase*base)%mod;
+            base=nextbase;
+        }
+        printf("%lld\n",sol);
+    }
+    return 0;
+}

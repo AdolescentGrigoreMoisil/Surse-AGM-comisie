@@ -1,0 +1,123 @@
+/* Stelian Chichirim
+ * Complexitate: O((N + M) * log(N))
+ * Expected: AC
+ */
+ 
+#include <cstdio>
+#include <vector>
+#include <algorithm>
+ 
+using namespace std;
+ 
+const int lim=1e5;
+ 
+struct str
+{
+    int tip,c,poz;
+};
+ 
+struct str1
+{
+    long long sum1,sum2,cnt;
+};
+ 
+vector<pair<int,int>> v[100010];
+vector<str> q[100010];
+int niv[100010],rmq[20][200010],logg[200010],first[100010],l,val[100010];
+str1 aib[100010];
+long long rez[100010];
+ 
+void dfs(int nod,int tata,int nivel)
+{
+    niv[nod]=nivel;
+    rmq[0][++l]=nod;
+    first[nod]=l;
+    for(int i=0;i<v[nod].size();i++)
+        if(v[nod][i].first!=tata)
+        {
+            val[v[nod][i].first]=v[nod][i].second;
+            dfs(v[nod][i].first,nod,nivel+1);
+            rmq[0][++l]=nod;
+        }
+}
+ 
+int lca(int a,int b)
+{
+    int x=first[a],y=first[b];
+    if(x>y) swap(x,y);
+    int l1=logg[y-x+1];
+    if(niv[rmq[l1][x]]<niv[rmq[l1][y-(1<<l1)+1]]) return rmq[l1][x];
+    else return rmq[l1][y-(1<<l1)+1];
+}
+ 
+void update(int poz,int val)
+{
+    if(poz==0) return;
+    for(int i=poz;i<=lim;i+=i&(-i))
+    {
+        aib[i].sum1+=val;
+        if(val>0) aib[i].sum2+=1LL*val*val;
+        else aib[i].sum2-=1LL*val*val;
+        if(val>0) aib[i].cnt++;
+        else aib[i].cnt--;
+    }
+}
+ 
+str1 query(int poz)
+{
+    str1 sol={0,0,0};
+    for(int i=poz;i>0;i-=i&(-i))
+    {
+        sol.cnt+=aib[i].cnt;
+        sol.sum1+=aib[i].sum1;
+        sol.sum2+=aib[i].sum2;
+    }
+    return sol;
+}
+ 
+void dfs1(int nod,int tata)
+{
+    update(val[nod],val[nod]);
+    for(int i=0;i<q[nod].size();i++)
+    {
+        str1 s=query(lim);
+        str1 s1=query(q[nod][i].c);
+        s.cnt-=s1.cnt;s.sum1-=s1.sum1;s.sum2-=s1.sum2;
+        if(q[nod][i].tip==1) rez[q[nod][i].poz]+=s.sum2+s.cnt*q[nod][i].c*q[nod][i].c-s.sum1*q[nod][i].c*2;
+        else rez[q[nod][i].poz]-=1LL*2*(s.sum2+s.cnt*q[nod][i].c*q[nod][i].c-s.sum1*q[nod][i].c*2);
+    }
+    for(int i=0;i<v[nod].size();i++)
+        if(v[nod][i].first!=tata) dfs1(v[nod][i].first,nod);
+    update(val[nod],-val[nod]);
+}
+ 
+int main()
+{
+    freopen("cuba.in","r",stdin);
+    freopen("cuba.out","w",stdout);
+    int n,q1,x,y,c;
+    scanf("%d%d",&n,&q1);
+    for(int i=2;i<=n;i++)
+    {
+        scanf("%d%d",&x,&c);
+        v[x].push_back({i,c});
+    }
+    dfs(1,0,1);
+    logg[1]=0;
+    for(int i=2;i<=l;i++) logg[i]=logg[i/2]+1;
+    for(int i=1;i<=logg[l];i++)
+        for(int j=1;j+(1<<i)-1<=l;j++)
+            if(niv[rmq[i-1][j]]<niv[rmq[i-1][j+(1<<(i-1))]]) rmq[i][j]=rmq[i-1][j];
+            else rmq[i][j]=rmq[i-1][j+(1<<(i-1))];
+    for(int i=1;i<=q1;i++)
+    {
+        scanf("%d%d%d",&x,&y,&c);
+        int z=lca(x,y);
+        q[x].push_back({1,c,i});
+        q[y].push_back({1,c,i});
+        q[z].push_back({-1,c,i});
+    }
+    dfs1(1,0);
+    for(int i=1;i<=q1;i++) printf("%lld\n",rez[i]);
+    return 0;
+}

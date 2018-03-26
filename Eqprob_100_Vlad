@@ -1,0 +1,86 @@
+/*
+* Vlad-Andrei Munteanu
+* University: University of Manchester
+* Problem: Eqprob
+* Author: George Marcus
+* Contest: "Adolescent Grgigore Moisil"
+* Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+//declarations - begin
+ifstream fin ("eqprob.in");
+ofstream fout ("eqprob.out");
+const int MAXN = 60;
+long long dp[MAXN][MAXN][MAXN]; //dp[i][j][k]
+                          //number of matches of substring [i, i + j - 1]
+                          //with a subsequence from [0, k - 1];
+//declarations - end
+ 
+void read (string& currentString) {
+  int useless;
+  fin >> useless;
+  assert (fin >> currentString);
+  assert (currentString.size() == useless);
+  assert (0 < currentString.size() and currentString.size() <= 50);
+} //read
+ 
+void prepareIt (int currentSize, long long dp[MAXN][MAXN][MAXN]){
+  for (int i = 0; i < currentSize; ++i) {
+    for (int j = 0; j < currentSize; ++j) {
+      for (int k = 0; k < currentSize; ++k) {
+        dp[i][j][k] = 0LL;
+      }
+    }
+  }
+  for (int currentPosition = 0; currentPosition < currentSize; ++currentPosition) {
+    for (int currentEnd = 0; currentEnd < currentSize; ++currentEnd) {
+      dp[currentPosition][0][currentEnd] = 1LL;
+    }
+  }
+} //prepareIt
+ 
+void generateDP (int currentSize, long long dp[MAXN][MAXN][MAXN], string source) {
+  for (int i = 0; i < currentSize; ++i) {
+    for (int j = 1; i + j - 1 < currentSize; ++j) {
+      for (int k = j; k - 1 < currentSize; ++k) {
+        dp[i][j][k] = dp[i][j][k - 1];
+        if (source[i + j - 1] == source[k - 1]) {
+          dp[i][j][k] += dp[i][j - 1][k - 1];
+        }
+      }
+    }
+  }
+} //generateDP
+ 
+long long getSimiliarities (int currentSize, long long dp[MAXN][MAXN][MAXN]) {
+  long long answer = 0LL;
+  for (int i = 0; i < currentSize; ++i) {
+    for (int j = 1; i + j - 1 < currentSize; ++j) {
+      answer += dp[i][j][currentSize];
+    }
+  }
+  return answer;
+} //getSimiliarities
+ 
+void solveOneTest () {
+  string currentString;
+  int currentSize;
+  read (currentString);
+  currentSize = currentString.size();
+  prepareIt(currentSize, dp);
+  generateDP(currentSize, dp, currentString);
+  fout << setprecision (12) << fixed << (long double)((long double) getSimiliarities(currentSize, dp) / ((1LL << currentSize) - 1LL)) / ((currentSize + 1LL) * currentSize / 2LL) << '\n';
+} //solveOneTest
+ 
+int main () {
+  int numberOfTests;
+  assert(fin >> numberOfTests);
+  assert(numberOfTests <= 10);
+  while (numberOfTests--) {
+    solveOneTest();
+  }
+  return 0;
+} //main

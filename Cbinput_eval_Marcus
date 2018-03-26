@@ -1,0 +1,127 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define MAXN 1050
+
+int counter;
+int N, K;
+int v[MAXN];
+
+void result(const char msg[], int p) {
+  fprintf(stderr, msg);
+  printf("%d", p);
+  exit(0);
+}
+
+void init() {
+  counter = 0;
+}
+
+void cautareBinara(int val) {
+  int st = 1;
+  int dr = N;
+  while(st <= dr) {
+    int mid = (st + dr) / 2;
+    if(v[mid] == val) {
+      while(mid <= N && v[mid] == val) {
+        mid++; // <==
+        counter++;
+      }
+      return;
+    } else if(v[mid] < val) {
+      st = mid + 1;
+    } else {
+      dr = mid - 1;
+    }
+  }
+}
+
+bool sorted() {
+  for (int i = 0; i + 1 < N; i++) {
+    if (v[i] > v[i + 1]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool allValues() {
+  int pos = 1;
+  for (int val = 1; val <= K; val++) {
+    if (pos > N || v[pos] != val) {
+      return false;
+    }
+    while (pos <= N && v[pos] == val) {
+      pos++;
+    }
+  }
+  return pos == N + 1;
+}
+
+int calcBestCounter() {
+  int st = 1;
+  int dr = N;
+  for (int val = K; val >= 1; val--) {
+    int m = (st + dr) / 2;
+    if (val - 1 >= m - 1) {
+      return N;
+    }
+    dr = m - 1;
+  }
+  return N - dr;
+}
+
+void simulate() {
+  for (int i = 1; i <= K; i++) {
+    cautareBinara(i);
+  }
+}
+
+int main() {
+  FILE *fin = fopen("cbinput.in", "r");
+  if (!fin) {
+    result("Fisier de intrare lipsa!", 0);
+  }
+
+  FILE *fout = fopen("cbinput.out", "r");
+  if (!fout) {
+    result("Fisier de iesire lipsa!", 0);
+  }
+
+  int T;
+  if (fscanf(fin, "%d", &T) != 1) {
+    result("Fisier de intrare corupt!", 0);
+  }
+
+  for (int t = 1; t <= T; t++) {
+    init();
+
+    if (fscanf(fin, "%d %d", &N, &K) != 2) {
+      result("Fisier de intrare corupt!", 0);
+    }
+    for (int i = 1; i <= N; i++) {
+      if (fscanf(fout, "%d", &v[i]) != 1) {
+        result("Fisier de iesire corupt!", 0);
+      }
+    }
+
+    if (!sorted()) {
+      result("Incorect", 0);
+    }
+    if (!allValues()) {
+      result("Incorect", 0);
+    }
+
+    int bestCounter = calcBestCounter();
+    simulate();
+
+    if (counter != bestCounter) {
+      result("Incorect", 0);
+    }
+  }
+
+  result("OK", 100);
+  
+  return 0;
+}

@@ -1,0 +1,128 @@
+/*
+ * Vlad-Andrei Munteanu
+ * University of Manchester
+ * Problem: Produse2
+ * Author: ---
+ * Contest: "Adolescent Grigore Moisil"
+ */
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+// #define fin cin 
+// #define fout cout
+ifstream fin ("produse2.in");
+ofstream fout ("produse2.out");
+const int MAXVal = static_cast<const int>(3e6);
+map <pair <int, int>, int> visited;
+ 
+long long computeLCM (long long a, long long b) {
+    return a * b / __gcd(a, b);
+}
+ 
+bool buildVectors (vector <int> &B, vector <pair <int, int>>& resulted, int start) {
+    resulted.emplace_back(1, 1);
+    for (int i = start; i + 1 < B.size(); i += 2) {
+        long long p = resulted.back().first;
+        long long q = resulted.back().second;
+        p *= B[i + 1];
+        q *= B[i];
+        long long gcd = __gcd(p, q);
+        p /= gcd;
+        q /= gcd;
+        if (p > MAXVal || q > MAXVal) {
+            fout << "0\n";
+            return false;
+        }
+        resulted.emplace_back(p, q);
+    }
+    return true;
+}
+ 
+bool buildLCM (long long& LCM, vector <pair <int, int>>& fractions) {
+    for (auto currentFraction : fractions) {
+        LCM = computeLCM(LCM, currentFraction.second);
+        if (LCM > MAXVal) {
+            fout << "0\n";
+            return false;
+        }
+    }
+    return true;
+}
+ 
+void solveOneQuery (vector <int>& B) {
+    long long LCMEvens = 1;
+    long long LCMOdds = 1;
+    vector <pair <int, int>> evens;
+    vector <pair <int, int>> odds;
+    if (!buildVectors(B, evens, 0)) {
+        return ;
+    }
+    if (!buildVectors(B, odds, 1)) {
+        return ;
+    }
+    if (!buildLCM(LCMEvens, evens)) {
+        return ;
+    }
+    if (!buildLCM(LCMOdds, odds)) {
+        return ;
+    }
+    int myValue = B[0];
+    int firstNumber = -1;
+    int secondNumber = -1;
+    int howmany = 0;
+    for (int i = 1; i * i <= myValue; ++i) {
+        if (myValue % i) {
+            continue;
+        }
+        if (i % LCMEvens == 0 and (myValue / i) % LCMOdds == 0) {
+            if (!howmany) {
+                firstNumber = static_cast<int>(i / LCMEvens);
+                secondNumber = static_cast<int>((myValue / i) / LCMOdds);
+            }
+            if (visited.count({i / LCMEvens, (myValue / i) / LCMOdds}) == 0) {
+                howmany += 1;
+                visited[{i / LCMEvens, (myValue / i) / LCMOdds}] += 1;
+            }
+        }
+        if (i % LCMOdds == 0 and (myValue / i) % LCMEvens == 0) {
+            if (!howmany) {
+                firstNumber = static_cast<int>((myValue / i) / LCMEvens);
+                secondNumber = static_cast<int>(i / LCMOdds);
+            }
+            if (visited.count({(myValue / i) / LCMEvens, i / LCMOdds}) == 0) {
+                howmany += 1;
+                visited[{(myValue / i) / LCMEvens, i / LCMOdds}] += 1;
+            }
+        }
+    }
+    fout << howmany << '\n';
+    if (!howmany) {
+        return ;
+    }
+    for (int i = 0; i < evens.size(); ++i) {
+        fout << (LCMEvens / evens[i].second) * firstNumber * evens[i].first << ' ';
+        if (i < odds.size()) {
+            fout << (LCMOdds / odds[i].second) * secondNumber * odds[i].first << ' ';
+        }
+    }
+    fout << '\n';
+}
+ 
+int main() {
+    int numberOfTests;
+    fin >> numberOfTests;
+    while (numberOfTests--) {
+        int n;
+        visited.clear();
+        vector <int> B;
+        fin >> n;
+        for (int i = 1; i < n; ++i) {
+            int x;
+            fin >> x;
+            B.push_back(x);
+        }
+        solveOneQuery(B);
+    }
+    return 0;
+}

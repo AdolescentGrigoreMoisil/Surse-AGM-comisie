@@ -1,0 +1,634 @@
+/*
+* Vlad-Andrei Munteanu
+* Univeristy Of Manchester
+* Problem: Brasov
+* Expected: Accepted
+*/
+#include <bits/stdc++.h>
+  
+using namespace std;
+  
+default_random_engine myGenerator;
+uniform_int_distribution<> myRandomDistribution (0, (int)1e9 - 1);
+  
+class Treap {
+public:
+    Treap () {
+        NILL = new TreapNode (nullptr, nullptr, -1, INF);
+        NILL->sizeOfSubtree = 0;
+        root = NILL;
+    }
+  
+    struct TreapNode {
+        int value;
+        int minValue;
+        int maxValue;
+        int minDiff;
+        int sizeOfSubtree;
+        int priority;
+        TreapNode *left;
+        TreapNode *right;
+        TreapNode (TreapNode *currentLeft, TreapNode *currentRight, int currentValue, int currentPriority) {
+            this->left = currentLeft;
+            this->right = currentRight;
+            this->priority = currentPriority;
+            this->sizeOfSubtree = 1;
+            this->value = this->minValue = this->maxValue = currentValue;
+            this->minDiff = INF;
+        }
+    } *root, *NILL;
+    void afisare () {
+        afis(root);
+        cout << '\n';
+    }
+  
+    void afis (TreapNode *& myTreap) {
+        if (myTreap == NILL) {
+            return ;
+        }
+        afis(myTreap->left);
+        cout << myTreap->value << ' ';
+        afis(myTreap->right);
+    }
+    void addValue (int newValue) {
+        addValue (root, newValue);
+    }
+  
+    void eraseValue (int deletedValue) {
+        eraseValue (root, deletedValue);
+    }
+  
+    int getMinDiff () {
+        if (root->sizeOfSubtree <= 1) {
+            return -1;
+        }
+        return root->minDiff;
+    }
+  
+    int getMaxDiff () {
+        if (root->sizeOfSubtree <= 1) {
+            return -1;
+        }
+        return root->maxValue - root->minValue;
+    }
+  
+    int getMaxValue () {
+        if (root == NILL) {
+            return - 1;
+        }
+        return root->maxValue;
+    }
+  
+    int getMinValue () {
+        if (root == NILL) {
+            return -1;
+        }
+        return root->minValue;
+    }
+  
+    int getInterval (int a, int b) {
+        return getInterval (root, a, b);
+    }
+  
+private:
+    //declarations - begin
+    static const int INF = static_cast<const int>(1e9);
+    //declarations -end
+  
+    void leftRotate (TreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        TreapNode* newNode = currentNode->left;
+        currentNode->left = newNode->right;
+        newNode->right = currentNode;
+        currentNode = newNode;
+    } //leftRotate
+  
+    void rightRotate (TreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        TreapNode* newNode = currentNode->right;
+        currentNode->right = newNode->left;
+        newNode->left = currentNode;
+        currentNode = newNode;
+    } //rightRotate
+  
+    void recheck (TreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        currentNode->sizeOfSubtree = currentNode->left->sizeOfSubtree + currentNode->right->sizeOfSubtree + 1;
+        currentNode->minDiff = min (currentNode->left->minDiff, currentNode->right->minDiff);
+        currentNode->minValue = currentNode->value;
+        currentNode->maxValue = currentNode->value;
+        if (currentNode->right != NILL) {
+            currentNode->minDiff = min (currentNode->minDiff, currentNode->right->minValue - currentNode->value);
+            currentNode->minValue = min (currentNode->minValue, currentNode->right->minValue);
+            currentNode->maxValue = max (currentNode->maxValue, currentNode->right->maxValue);
+        }
+        if (currentNode->left != NILL) {
+            currentNode->minDiff = min (currentNode->minDiff, currentNode->value - currentNode->left->maxValue);
+            currentNode->minValue = min (currentNode->minValue, currentNode->left->minValue);
+            currentNode->maxValue = max (currentNode->maxValue, currentNode->left->maxValue);
+        }
+    }
+  
+    void balanceNode (TreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        if (currentNode->priority > currentNode->left->priority) {
+            leftRotate (currentNode);
+        }
+        if (currentNode->priority > currentNode->right->priority) {
+            rightRotate (currentNode);
+        }
+        recheck (currentNode->left);
+        recheck (currentNode->right);
+        recheck (currentNode);
+    }
+  
+    void addValue (TreapNode *& currentNode, int newValue) {
+        if (currentNode == NILL) {
+            currentNode = new TreapNode (NILL, NILL, newValue, myRandomDistribution(myGenerator));
+        }
+        else {
+            if (newValue <= currentNode->value) {
+                addValue (currentNode->left, newValue);
+            }
+            else {
+                addValue (currentNode->right, newValue);
+            }
+        }
+        balanceNode (currentNode);
+    } //addValue
+  
+    void eraseValue (TreapNode *& currentNode, int deletedValue) {
+        if (currentNode == NILL) {
+            assert(0);
+        }
+        if (currentNode->value > deletedValue) {
+            eraseValue (currentNode->left, deletedValue);
+            recheck (currentNode);
+            return ;
+        }
+        if (currentNode->value < deletedValue) {
+            eraseValue (currentNode->right, deletedValue);
+            recheck (currentNode);
+            return;
+        }
+        if (currentNode->left == NILL and currentNode->right == NILL) {
+            delete (currentNode);
+            currentNode = NILL;
+            return;
+        }
+        if (currentNode->left->priority < currentNode->right->priority) {
+            leftRotate (currentNode);
+            eraseValue (currentNode->right, deletedValue);
+            recheck (currentNode);
+            return ;
+        }
+        rightRotate (currentNode);
+        eraseValue (currentNode->left, deletedValue);
+        recheck (currentNode);
+    }
+  
+    int getInterval (TreapNode *& currentNode, int left, int right) {
+        if (currentNode == NILL) {
+            return 0;
+        }
+        if (left <= currentNode -> minValue and currentNode->maxValue <= right) {
+            return currentNode->sizeOfSubtree;
+        }
+        int howMany = 0;
+        if (left <= currentNode->value and currentNode->value <= right) {
+            howMany += 1;
+        }
+        if (left <= currentNode->value) {
+            howMany += getInterval (currentNode->left, left, right);
+        }
+        if (currentNode->value <= right) {
+            howMany += getInterval (currentNode->right, left, right);
+        }
+        return howMany;
+    }
+};
+  
+class IntervalsTreap {
+public:
+    IntervalsTreap () {
+        NILL = new IntervalsTreapNode (nullptr, nullptr, INF, -INF, INF);
+        root = NILL;
+    }
+  
+    struct IntervalsTreapNode {
+        IntervalsTreapNode *leftNode;
+        IntervalsTreapNode *rightNode;
+        int priority;
+        int left;
+        int right;
+        int minLeft;
+        int maxRight;
+        IntervalsTreapNode (IntervalsTreapNode *currentLeftNode, IntervalsTreapNode *currentRightNode, int currentLeft, int currentRight, int currentPriority) {
+            this->leftNode = currentLeftNode;
+            this->rightNode = currentRightNode;
+            this->left = currentLeft;
+            this->right = currentRight;
+            this->minLeft = currentLeft;
+            this->maxRight = currentRight;
+            this->priority = currentPriority;
+        }
+    } *root, *NILL;
+    void afisare () {
+        afis (root);
+        cout << " versus ";
+    }
+  
+    void afis (IntervalsTreapNode *& node) {
+  
+        if (node == NILL) {
+            return ;
+        }
+        afis(node->leftNode);
+        cout << node->right - node->left << ' ';
+        afis(node->rightNode);
+    }
+  
+    void addInterval (int currentLeft, int currentRight, Treap *& myTreap) {
+        addInterval(myTreap, currentLeft, currentRight);
+    }
+  
+    void eraseInterval (int currentLeft, int currentRight, Treap *& myTreap) {
+        eraseInterval(myTreap, currentLeft, currentRight);
+    }
+private:
+    int INF = static_cast<int>(1e9);
+  
+    void leftRotate (IntervalsTreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        IntervalsTreapNode* newNode = currentNode->leftNode;
+        currentNode->leftNode = newNode->rightNode;
+        newNode->rightNode = currentNode;
+        currentNode = newNode;
+    } //leftRotate
+  
+    void rightRotate (IntervalsTreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        IntervalsTreapNode* newNode = currentNode->rightNode;
+        currentNode->rightNode = newNode->leftNode;
+        newNode->leftNode = currentNode;
+        currentNode = newNode;
+    } //rightRotate
+  
+    void recheck (IntervalsTreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        currentNode->minLeft = currentNode->left;
+        currentNode->maxRight = currentNode->right;
+        if (currentNode->rightNode != NILL) {
+            currentNode->maxRight = max (currentNode->maxRight, currentNode->rightNode->maxRight);
+        }
+        if (currentNode->leftNode != NILL) {
+            currentNode->minLeft = min (currentNode->minLeft, currentNode->leftNode->minLeft);
+        }
+    }
+  
+    void balanceNode (IntervalsTreapNode *& currentNode) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        if (currentNode->priority > currentNode->leftNode->priority) {
+            leftRotate (currentNode);
+        }
+        if (currentNode->priority > currentNode->rightNode->priority) {
+            rightRotate (currentNode);
+        }
+        recheck (currentNode->leftNode);
+        recheck (currentNode->rightNode);
+        recheck (currentNode);
+    }
+  
+    bool unite (IntervalsTreapNode *& currentNode, int left, int right, Treap *& myTreap) {
+        if (currentNode->right == left or right == currentNode->left) {
+            myTreap->eraseValue(currentNode->right - currentNode->left);
+            myTreap->addValue(max(currentNode->right, right) - min(currentNode->left, left));
+            currentNode->right = max (currentNode->right, right);
+            currentNode->left = min (currentNode->left, left);
+            return true;
+        }
+        return false;
+    }
+  
+    void addInterval (Treap *myTreap, int currentLeft, int currentRight) {
+        eraseInterval(myTreap, currentLeft, currentRight);
+        if (root == NILL) {
+            root = new IntervalsTreapNode(NILL, NILL, currentLeft, currentRight, myRandomDistribution(myGenerator));
+            myTreap->addValue(currentRight - currentLeft);
+            return ;
+        }
+        IntervalsTreapNode* rightOne = NILL;
+        IntervalsTreapNode* leftOne = NILL;
+        int lastRightPriority = -1;
+        int lastLeftPriority = -1;
+        if (root->maxRight >= currentRight) {
+            lastRightPriority = goUpHigherOrEqual(root, currentRight);
+            if (root->left <= currentLeft and currentRight <= root->right) {
+                assert(currentLeft == currentRight);
+                root->priority = lastRightPriority;
+                pushTreapDown(root, false);
+                return;
+            }
+            rightOne = root;
+            leftOne = root->leftNode;
+            rightOne->leftNode = NILL;
+            recheck(rightOne);
+            recheck(leftOne);
+        }
+        else {
+            assert(root->maxRight <= currentLeft);
+            leftOne = root;
+            recheck(leftOne);
+        }
+        lastLeftPriority = goUpLowerOrEqual(leftOne, currentLeft);
+  
+        if (unite(leftOne, currentLeft, currentRight, myTreap)) {
+            if (leftOne != NILL) {
+                leftOne->priority = lastLeftPriority;
+                assert(lastLeftPriority >= 0);
+                pushTreapDown(leftOne, false);
+            }
+            if (rightOne != NILL) {
+                rightOne->priority = lastRightPriority;
+                assert(lastRightPriority >= 0);
+                pushTreapDown(rightOne, false);
+            }
+            root = joinTreaps(leftOne, rightOne, myTreap);
+            return;
+        }
+        if (unite(rightOne, currentLeft, currentRight, myTreap)) {
+            if (leftOne != NILL) {
+                leftOne->priority = lastLeftPriority;
+                assert(lastLeftPriority >= 0);
+                pushTreapDown(leftOne, false);
+            }
+            if (rightOne != NILL) {
+                rightOne->priority = lastRightPriority;
+                assert(lastRightPriority >= 0);
+                pushTreapDown(rightOne, false);
+            }
+            root = joinTreaps(leftOne, rightOne, myTreap);
+            return;
+        }
+  
+  
+        if (leftOne != NILL) {
+            leftOne->priority = lastLeftPriority;
+            assert(lastLeftPriority >= 0);
+            pushTreapDown(leftOne, false);
+        }
+        if (rightOne != NILL) {
+            rightOne->priority = lastRightPriority;
+            assert(lastRightPriority >= 0);
+            pushTreapDown(rightOne, false);
+        }
+        IntervalsTreapNode* newNode = new IntervalsTreapNode (leftOne, rightOne, currentLeft, currentRight, myRandomDistribution(myGenerator));
+        myTreap->addValue(currentRight - currentLeft);
+        pushTreapDown(newNode, false);
+        root = newNode;
+    }
+  
+    void eraseInterval (Treap *myTreap, int currentLeft, int currentRight) {
+        if (root->minLeft >= currentRight or root->maxRight <= currentLeft) {
+            return ;
+        }
+        int leftPriority = goUpHigherOrEqual(root, currentLeft);
+        IntervalsTreapNode* leftTreap;
+        IntervalsTreapNode* rightTreap;
+        if (currentLeft < root->left) {
+            leftTreap = root->leftNode;
+            root->leftNode = NILL;
+        }
+        else {
+            myTreap->eraseValue(root->right - root->left);
+            myTreap->addValue(currentLeft - root->left);
+            myTreap->addValue(root->right - currentLeft);
+            IntervalsTreapNode* newNode = new IntervalsTreapNode (root->leftNode, NILL, root->left, currentLeft, myRandomDistribution(myGenerator));
+            root->leftNode = NILL;
+            root->left = currentLeft;
+            leftTreap = newNode;
+            recheck(leftTreap);
+            pushTreapDown(leftTreap, false);
+        }
+        root->priority = leftPriority;
+        pushTreapDown(root, false);
+        recheck(leftTreap);
+        recheck(root);
+        if (root->minLeft >= currentRight or root->maxRight <= currentLeft) {
+            root = joinTreaps(leftTreap, root, myTreap);
+            return ;
+        }
+  
+        int rightPriority = goUpLowerOrEqual(root, currentRight);
+        if (currentRight > root->right) {
+            rightTreap = root->rightNode;
+            root->rightNode = NILL;
+        }
+        else {
+            myTreap->eraseValue(root->right - root->left);
+            myTreap->addValue(currentRight - root->left);
+            myTreap->addValue(root->right - currentRight);
+            IntervalsTreapNode* newNode = new IntervalsTreapNode (NILL, root->rightNode, currentRight, root->right, myRandomDistribution(myGenerator));
+            root->rightNode = NILL;
+            root->right = currentRight;
+            rightTreap = newNode;
+            recheck(rightTreap);
+            pushTreapDown(rightTreap, false);
+        }
+        root->priority = rightPriority;
+        pushTreapDown(root, false);
+  
+        recheck(rightTreap);
+        recheck(root);
+        destroy(root, myTreap);
+        root = joinTreaps(leftTreap, rightTreap, myTreap);
+    }
+  
+    IntervalsTreapNode* joinTreaps (IntervalsTreapNode *& leftTreap, IntervalsTreapNode *& rightTreap, Treap *& myTreap) {
+        if (leftTreap == NILL) {
+            return rightTreap;
+        }
+        if (rightTreap == NILL) {
+            return leftTreap;
+        }
+        if (leftTreap->maxRight < rightTreap->minLeft) {
+            IntervalsTreapNode* newNode = new IntervalsTreapNode (leftTreap, rightTreap, INF, -INF, INF + 1);
+            pushTreapDown(newNode, true);
+            return newNode;
+        }
+        int lastPriorityLeft = goUpLowerOrEqual(leftTreap, leftTreap->maxRight);
+        int lastPriorityRight = goUpHigherOrEqual(rightTreap, rightTreap->minLeft);
+        int left = leftTreap->left;
+        int right = rightTreap->right;
+        assert(leftTreap->rightNode == NILL);
+        assert(rightTreap->leftNode == NILL);
+        myTreap->eraseValue(leftTreap->right - leftTreap->left);
+        myTreap->eraseValue(rightTreap->right - rightTreap->left);
+        myTreap->addValue(rightTreap->right - leftTreap->left);
+        pushTreapDown(leftTreap, true);
+        pushTreapDown(rightTreap, true);
+        IntervalsTreapNode* newNode = new IntervalsTreapNode (leftTreap, rightTreap, left, right, myRandomDistribution(myGenerator));
+        recheck(newNode);
+        pushTreapDown(newNode, false);
+        return newNode;
+    }
+  
+    int goUpLowerOrEqual (IntervalsTreapNode *& currentNode, int value) {
+        if (currentNode == NILL) {
+            return currentNode->priority;
+        }
+        if (currentNode->left <= value and value < currentNode->rightNode->minLeft) {
+            int lastPriority = currentNode->priority;
+            currentNode->priority = -1;
+            return lastPriority;
+        }
+        if (currentNode->left > value) {
+            int lastPriority = goUpLowerOrEqual(currentNode->leftNode, value);
+            balanceNode(currentNode);
+            return lastPriority;
+        }
+        int lastPriority = goUpLowerOrEqual(currentNode->rightNode, value);
+        balanceNode(currentNode);
+        return lastPriority;
+    }
+  
+    int goUpHigherOrEqual (IntervalsTreapNode *& currentNode, int value) {
+        if (currentNode == NILL) {
+            return currentNode->priority;
+        }
+        if (currentNode->right >= value and value > currentNode->leftNode->maxRight) {
+            int lastPriority = currentNode->priority;
+            currentNode->priority = -1;
+            return lastPriority;
+        }
+        if (currentNode->right < value) {
+            int lastPriority = goUpHigherOrEqual(currentNode->rightNode, value);
+            balanceNode(currentNode);
+            return lastPriority;
+        }
+        int lastPriority = goUpHigherOrEqual(currentNode->leftNode, value);
+        balanceNode(currentNode);
+        return lastPriority;
+    }
+  
+    void pushTreapDown (IntervalsTreapNode *& currentNode, bool andDelete) {
+        if (andDelete and currentNode->leftNode == NILL and currentNode->rightNode == NILL) {
+            delete currentNode;
+            currentNode = NILL;
+        }
+        if (currentNode == NILL) {
+            return;
+        }
+        if (!andDelete and currentNode->priority <= currentNode->leftNode->priority and currentNode->priority <= currentNode->rightNode->priority) {
+            recheck (currentNode->leftNode);
+            recheck (currentNode->rightNode);
+            recheck (currentNode);
+            return;
+        }
+        if (currentNode->rightNode->priority > currentNode->leftNode->priority) {
+            leftRotate (currentNode);
+            pushTreapDown(currentNode->rightNode, andDelete);
+            recheck (currentNode->leftNode);
+            recheck (currentNode->rightNode);
+            recheck (currentNode);
+            return;
+        }
+        rightRotate (currentNode);
+        pushTreapDown(currentNode->leftNode, andDelete);
+        recheck (currentNode->leftNode);
+        recheck (currentNode->rightNode);
+        recheck (currentNode);
+    }
+  
+    void destroy (IntervalsTreapNode *& currentNode, Treap *& myTreap) {
+        if (currentNode == NILL) {
+            return ;
+        }
+        destroy(currentNode->leftNode, myTreap);
+        destroy(currentNode->rightNode, myTreap);
+        myTreap->eraseValue(currentNode->right - currentNode->left);
+        delete(currentNode);
+        currentNode = NILL;
+    }
+};
+  
+int main () {
+    ifstream fin ("brasov.in");
+    ofstream fout ("brasov.out");
+    Treap *myTreap = new Treap();
+    IntervalsTreap *myIntervalsTreap = new IntervalsTreap();
+  
+    int numberOfQueries;
+    assert (fin >> numberOfQueries);
+    assert (1 <= numberOfQueries and numberOfQueries <= 500000);
+    for (int i = 1; i <= numberOfQueries; ++i) {
+        char operationType;
+        assert (fin >> operationType);
+        if (operationType == '0') {
+            int left, right;
+            assert (fin >> left >> right);
+            assert (-100000000 <= left and left < right and right <= 100000000);
+            myIntervalsTreap->eraseInterval(left, right, myTreap);
+            continue;
+        }
+        if (operationType == '1') {
+            int left, right;
+            assert (fin >> left >> right);
+            assert (-100000000 <= left and left <= right and right <= 100000000);
+            myIntervalsTreap->addInterval(left, right, myTreap);
+            continue;
+        }
+        if (operationType == '2') {
+            int left, right;
+            assert (fin >> left >> right);
+            assert (0 <= left and left <= right and right <= 1000000000);
+            fout << myTreap->getInterval(left, right) << '\n';
+            continue;
+        }
+        if (operationType == 'M') {
+            assert (fin >> operationType);
+            if (operationType == 'I') {
+                assert (fin >> operationType);
+                assert(operationType == 'N');
+                fout << myTreap->getMinValue() << '\n';
+                continue;
+            }
+            if (operationType == 'A') {
+                assert (fin >> operationType);
+                assert(operationType == 'X');
+                fout << myTreap->getMaxValue() << '\n';
+                continue;
+            }
+        }
+        if (operationType == 'D') {
+            string restOfInput;
+            assert (fin >> restOfInput);
+            if (restOfInput == "iff_min") {
+                fout << myTreap->getMinDiff() << '\n';
+                continue;
+            }
+            if (restOfInput == "iff_max") {
+                fout << myTreap->getMaxDiff() << '\n';
+                continue;
+            }
+        }
+        assert (0);
+    }
+    return 0;
+}

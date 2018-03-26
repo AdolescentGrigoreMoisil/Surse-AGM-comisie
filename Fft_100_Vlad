@@ -1,0 +1,317 @@
+/*
+* Vlad-Andrei Munteanu
+* University: University of Manchester
+* Problem: Fast Fourier Transformation
+* Author: Vlad-Andrei Munteanu
+* Contest: "Adolescent Grigore Moisil"
+* Expected: Accepted
+*/
+#include <bits/stdc++.h>
+  
+using namespace std;
+  
+class compare {
+public:
+    bool operator () (const pair <long long, pair<int, int>>& firstElement, const pair <long long, pair<int, int>>& secondElement) const {
+        return firstElement.second.first < secondElement.second.first;
+    } //operator
+};
+  
+struct palNode {
+    int length, howMany;
+    palNode* next[26];
+    palNode* suffixLink;
+    palNode (int currentLength, int currentHowMany) {
+        length = currentLength;
+        howMany = currentHowMany;
+        suffixLink = nullptr;
+        for (auto &currentSon : next) {
+            currentSon = nullptr;
+        }
+    }
+};
+struct nodeSegmentTree {
+    int leftNode, rightNode;
+    long long value;
+};
+  
+//declarations - begin
+ifstream fin ("fft.in");
+ofstream fout ("fft.out");
+const long long MAXMod = 1e18;
+const long long MAXBase = 1e18;
+const int MAXSize = 2e5;
+const int MAXQueries = 2e5;
+int numberOfNodes;
+vector <int> rootsSegTree;
+vector <nodeSegmentTree> nodesSegTree;
+vector <palNode *> Q;
+vector <pair<long long, pair<int, int>>> hashes;
+vector <pair<long long, int>> normalize;
+vector <pair<pair<long long, long long>, pair <int, int>>> queries;
+palNode *currentNode, *oddRoot, *evenRoot;
+//declarations - end
+  
+long long multiplication (long long a, long long b, long long MOD) {
+    long long result = 0LL;
+    a %= MOD;
+    b %= MOD;
+    while (b) {
+        if (b&1) {
+            result = result + a;
+            if (result >= MOD) {
+                result -= MOD;
+            }
+        }
+        a = a + a;
+        if (a >= MOD) {
+            a -= MOD;
+        }
+        b >>= 1;
+    }
+    return result;
+} //multiplication
+  
+void preparePersistentSegmentTree (int numberOfPalindroms) {
+    rootsSegTree.resize (static_cast<unsigned int>(numberOfPalindroms + 20));
+    nodesSegTree.resize (static_cast<unsigned int>(30 * numberOfPalindroms));
+} //preparePersistentSegmentTree
+  
+int getLeft (int currentNode) {
+    return nodesSegTree[currentNode].leftNode;
+} //getLeft
+  
+int getRight (int currentNode) {
+    return nodesSegTree[currentNode].rightNode;
+} //getRight
+  
+long long getValue (int currentNode) {
+    return nodesSegTree[currentNode].value;
+} //getValue
+  
+void setLeft (int currentNode, int changeIn) {
+    nodesSegTree[currentNode].leftNode = changeIn;
+} //setLeft
+  
+void setRight (int currentNode, int changeIn) {
+    nodesSegTree[currentNode].rightNode = changeIn;
+} //setRight
+  
+void setValue (int currentNode, long long changeIn) {
+    nodesSegTree[currentNode].value = changeIn;
+} //setValue
+  
+int generateNewNode (int currentNode) {
+    numberOfNodes += 1;
+    nodesSegTree[numberOfNodes] = nodesSegTree[currentNode];
+    return numberOfNodes;
+} //generateNewNode
+  
+int addValueToSegTree (int currentNode, int left, int right, int position, long long value) {
+    currentNode = generateNewNode(currentNode);
+    if (left == right) {
+        setValue(currentNode, getValue(currentNode) + value);
+        return currentNode;
+    }
+    int middle = left + right >> 1;
+    if (position <= middle) {
+        setLeft(currentNode, addValueToSegTree(getLeft(currentNode), left, middle, position, value));
+    }
+    else {
+        setRight(currentNode, addValueToSegTree(getRight(currentNode), middle + 1, right, position, value));
+    }
+    setValue(currentNode, getValue(getLeft(currentNode)) + getValue(getRight(currentNode)));
+    return currentNode;
+} //addValueToSegTree
+  
+long long getAnswer (int currentNodeLeft, int currentNodeRight, int left, int right, int leftQuery, int rightQuery) {
+    if (leftQuery <= left and right <= rightQuery) {
+        return getValue(currentNodeRight) - getValue(currentNodeLeft);
+    }
+    int middle = left + right >> 1;
+    long long leftSum = 0;
+    long long rightSum = 0;
+    if (leftQuery <= middle) {
+        leftSum = getAnswer(getLeft(currentNodeLeft), getLeft(currentNodeRight), left, middle, leftQuery, rightQuery);
+    }
+    if (middle < rightQuery) {
+        rightSum = getAnswer(getRight(currentNodeLeft), getRight(currentNodeRight), middle + 1, right, leftQuery, rightQuery);
+    }
+    return leftSum + rightSum;
+} //getAnswer
+  
+void setSuffixLink (palNode *&source, palNode *target) {
+    source->suffixLink = target;
+} //setSuffixLink
+  
+void preparePalTree () {
+    oddRoot = new palNode (-1, 0);
+    evenRoot = new palNode (0, 0);
+    setSuffixLink(oddRoot, oddRoot);
+    setSuffixLink(evenRoot, oddRoot);
+    currentNode = oddRoot;
+} //preparePalTree
+  
+void buildSuffixLink (palNode *currentOption, palNode *&source, string &s, int position) {
+    if (position - currentOption->length - 1 >= 0 and s[position] == s[position - currentOption->length - 1] and currentOption->next[s[position] - 'a'] != source) {
+        assert (currentOption->next[s[position] - 'a'] != nullptr);
+        setSuffixLink(source, currentOption->next[s[position] - 'a']);
+        return;
+    }
+    if (currentOption == oddRoot) {
+        setSuffixLink(source, evenRoot);
+        return;
+    }
+    buildSuffixLink(currentOption->suffixLink, source, s, position);
+} //buildSuffixLink
+  
+void addLetter (palNode *&currentNode, string &s, int position) {
+    if (position - currentNode->length - 1 >= 0 and s[position] == s[position - currentNode->length - 1]) {
+        if (currentNode->next[s[position] - 'a'] == nullptr) {
+            currentNode->next[s[position] - 'a'] = new palNode (currentNode->length + 2, 0);
+            buildSuffixLink(currentNode->suffixLink, currentNode->next[s[position] - 'a'], s, position);
+            Q.push_back(currentNode->next[s[position] - 'a']);
+        }
+        currentNode = currentNode->next[s[position] - 'a'];
+        currentNode->howMany += 1;
+        assert(currentNode->suffixLink != nullptr);
+        return;
+    }
+    currentNode = currentNode->suffixLink;
+    addLetter(currentNode, s, position);
+} //addLetter
+  
+void addString (palNode *&currentNode, string &s) {
+    int currentPosition = 0;
+    while (currentPosition < s.size()) {
+        addLetter(currentNode, s, currentPosition);
+        currentPosition += 1;
+    }
+} //addString
+  
+void pushHowMany () {
+    while(!Q.empty()) {
+        palNode *currentNode = Q.back();
+        Q.pop_back();
+        currentNode->suffixLink->howMany += currentNode->howMany;
+    }
+} //pushHowMany
+  
+void buildHashes (palNode *currentNode, long long base, long long powerOfBase, long long MOD, long long currentResult) {
+    if (currentNode->length > 0) {
+        hashes.push_back({currentResult, {currentNode->length, currentNode->howMany}});
+    }
+    for (int currentSon = 0; currentSon < 26; ++currentSon) {
+        if (nullptr == currentNode->next[currentSon]) {
+            continue;
+        }
+        if (currentNode == oddRoot) {
+            buildHashes(currentNode->next[currentSon], base, 1LL, MOD, ((long long)'a' + currentSon) % MOD);
+            continue;
+        }
+        if (currentNode == evenRoot) {
+            buildHashes(currentNode->next[currentSon], base, base, MOD, multiplication((long long)'a' + currentSon, base + 1LL, MOD));
+            continue;
+        }
+        long long auxiliaryCurrentResult = multiplication(currentResult, base, MOD);
+        long long auxiliaryPowerOfBase = multiplication(powerOfBase, base, MOD);
+        auxiliaryPowerOfBase = multiplication(auxiliaryPowerOfBase, base, MOD);
+        long long newResult = auxiliaryCurrentResult + multiplication((long long)'a' + currentSon, auxiliaryPowerOfBase + 1LL, MOD);
+        if (newResult >= MOD) {
+            newResult -= MOD;
+        }
+        buildHashes(currentNode->next[currentSon], base, auxiliaryPowerOfBase, MOD, newResult);
+    }
+} //buildHashes
+  
+void buildQueries (int numberOfQueries, vector <pair<pair<long long, long long>, pair<int, int>>>& queries) {
+    for (int currentQuery = 0; currentQuery < numberOfQueries; ++currentQuery) {
+        long long firstModulo, secondModulo;
+        int firstLength, secondLength;
+        assert (fin >> firstModulo >> secondModulo >> firstLength >> secondLength);
+        assert (0 <= firstModulo and firstModulo <= MAXMod);
+        assert (0 <= secondModulo and secondModulo <= MAXMod);
+        queries.push_back({{firstModulo, secondModulo}, {firstLength, secondLength}});
+    }
+} //buildQueries
+  
+void normalizeQueriesAndHashes (vector <pair<long long, pair<int, int>>>& hashes, vector<pair<pair<long long, long long>, pair<int, int>>>& queries, int& maximumPossibleValue) {
+    int currentPosition = 0, currentValue = 1;
+    for (auto currentHash : hashes) {
+        normalize.emplace_back(currentHash.first, currentPosition);
+        ++currentPosition;
+    }
+    for (auto currentQuery : queries) {
+        normalize.emplace_back(currentQuery.first.first, currentPosition);
+        normalize.emplace_back(currentQuery.first.second, currentPosition);
+        ++currentPosition;
+    }
+    sort (normalize.begin(), normalize.end());
+    for (int currentIndex = 0; currentIndex < normalize.size(); ++currentIndex) {
+        int lastValue = currentValue;
+        if (currentIndex + 1 < normalize.size() and normalize[currentIndex].first != normalize[currentIndex + 1].first) {
+            ++currentValue;
+        }
+        maximumPossibleValue = lastValue;
+        normalize[currentIndex].first = lastValue;
+        normalize[currentIndex] = {normalize[currentIndex].second, normalize[currentIndex].first};
+    }
+    sort (normalize.begin(), normalize.end());
+    for (int currentIndex = 0; currentIndex < normalize.size(); ++currentIndex) {
+        if (currentIndex < hashes.size()) {
+            hashes[currentIndex].first = normalize[currentIndex].second;
+            continue;
+        }
+        auto hashesSize = (int)hashes.size();
+        queries[(currentIndex - hashesSize) >> 1].first.first = normalize[currentIndex].second;
+        ++currentIndex;
+        assert (currentIndex < normalize.size());
+        queries[(currentIndex - hashesSize) >> 1].first.second = normalize[currentIndex].second;
+    }
+} //normalizeQueriesAndHashes
+  
+int main() {
+    assert (fin.is_open());
+    assert (fout.is_open());
+    long long base, modulo;
+    int theLastRoot = 0, maximumValueOfHash, numberOfQueries;
+    string currentString;
+    assert (fin >> base >> modulo);
+    assert (0 <= base and base <= MAXBase);
+    assert (1 <= modulo and modulo <= MAXMod);
+    assert (fin >> currentString);
+    assert (1 <= currentString.size() and currentString.size() <= MAXSize);
+    assert (fin >> numberOfQueries);
+    assert (1 <= numberOfQueries and numberOfQueries <= MAXQueries);
+    buildQueries(numberOfQueries, queries);
+    preparePalTree();
+    addString(currentNode, currentString);
+    pushHowMany();
+    buildHashes(oddRoot, base, 1, modulo, 0);
+    buildHashes(evenRoot, base, 1, modulo, 0);
+    normalizeQueriesAndHashes(hashes, queries, maximumValueOfHash);
+    sort (hashes.begin(), hashes.end(), compare());
+    preparePersistentSegmentTree(currentString.size() + 5);
+    for (auto &currentHash : hashes) {
+        while (theLastRoot < currentHash.second.first) {
+            theLastRoot += 1;
+            rootsSegTree[theLastRoot] = rootsSegTree[theLastRoot - 1];
+        }
+        rootsSegTree[theLastRoot] = addValueToSegTree(rootsSegTree[theLastRoot], 1, maximumValueOfHash, (int)currentHash.first, currentHash.second.second);
+    }
+    while (theLastRoot != currentString.size()) {
+        theLastRoot += 1;
+        rootsSegTree[theLastRoot] = rootsSegTree[theLastRoot - 1];
+    }
+    for (auto currentQuery : queries) {
+        auto leftHash = (int)currentQuery.first.first;
+        auto rightHash = (int)currentQuery.first.second;
+        int leftLength = currentQuery.second.first;
+        int rightLength = currentQuery.second.second;
+        assert (leftHash <= rightHash);
+        assert (1 <= leftLength and leftLength <= rightLength);
+        assert (leftLength <= rightLength and rightLength <= currentString.size());
+        fout << getAnswer(rootsSegTree[leftLength - 1], rootsSegTree[rightLength], 1, maximumValueOfHash, leftHash, rightHash) << '\n';
+    }
+    return 0;
+}

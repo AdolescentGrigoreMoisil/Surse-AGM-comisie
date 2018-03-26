@@ -1,0 +1,169 @@
+/*
+ * Vlad-Andrei Munteanu
+ * University of Manchester
+ * Problem: HSAttack
+ * Atuthor: George Marcus
+ * Expected: Accepted
+ */
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+//declarations - begin
+vector <int> graph[1002];
+queue <int> bellmanFord;
+int capacity[1002][1002];
+int flow[1002][1002];
+int costs[1002][1002];
+int attack[501], defencive[501];
+int distances[1002];
+int inQueue[1002];
+int father[1002];
+//declarations - end
+ 
+void buildGraph (int n, int myAttack, int numberOfMinions, int& source, int& target) {
+    //get source and target
+    source = 0;
+    target = numberOfMinions + n + 1;
+    //clear the graph
+    for (int i = source; i <= target; ++i) {
+        graph[i].clear();
+    }
+    //set edges between enemies and you
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j < numberOfMinions; ++j) {
+            if (j == 0 or (defencive[i] / (myAttack + j) + (defencive[i] % (myAttack + j) != 0)) <
+                          (defencive[i] / (myAttack + j - 1) + (defencive[i] % (myAttack + j - 1) != 0))) {
+                graph[i].push_back(n + j + 1);
+                graph[n + j + 1].push_back(i);
+                capacity[i][n + j + 1] = 1;
+                capacity[n + j + 1][i] = 0;
+                flow[i][n + j + 1] = 0;
+                flow[n + j + 1][i] = 0;
+                costs[i][n + j + 1] = attack[i] * (defencive[i] / (myAttack + j) + (defencive[i] % (myAttack + j) != 0));
+                costs[n + j + 1][i] = -costs[i][n + j + 1];
+            }
+        }
+    }
+    //set edges between tour minions with infinite capacity and cost 0
+    for (int j = 1; j < numberOfMinions; ++j) {
+        graph[n + j].push_back(n + j + 1);
+        graph[n + j + 1].push_back(n + j);
+        capacity[n + j][n + j + 1] = 1000;
+        capacity[n + j + 1][n + j] = 0;
+        flow[n + j][n + j + 1] = 0;
+        flow[n + j + 1][n + j] = 0;
+        costs[n + j][n + j + 1] = 0;
+        costs[n + j + 1][n + j] = 0;
+    }
+    //set edges between source and enemies with capacity 1 and cost 0
+    for (int i = 1; i <= n; ++i) {
+        graph[source].push_back(i);
+        graph[i].push_back(source);
+        capacity[source][i] = 1;
+        capacity[i][source] = 0;
+        flow[source][i] = 0;
+        flow[i][source] = 0;
+        costs[source][i] = 0;
+        costs[i][source] = 0;
+    }
+    //set edges between your minions and target with capacity 1 and cost 0
+    for (int j = 0; j < numberOfMinions; ++j) {
+        graph[n + j + 1].push_back(target);
+        graph[target].push_back(n + j + 1);
+        capacity[n + j + 1][target] = 1;
+        capacity[target][n + j + 1] = 0;
+        flow[n + j + 1][target] = 0;
+        flow[target][n + j + 1] = 0;
+        costs[n + j + 1][target] = 0;
+        costs[target][n + j + 1] = 0;
+    }
+}
+ 
+bool updateFlow (int& currentCost, int source, int target) {
+    for (int i = source; i <= target; ++i) {
+        distances[i] = (1 << 29);
+        inQueue[i] = 0;
+        father[i] = i;
+    }
+    distances[source] = 0;
+    inQueue[source] = 1;
+    bellmanFord.push(source);
+    while (!bellmanFord.empty()) {
+        int currentNode = bellmanFord.front();
+        bellmanFord.pop();
+        inQueue[currentNode] = 0;
+        for (auto x : graph[currentNode]) {
+           if (capacity[currentNode][x] > flow[currentNode][x] and distances[x] > distances[currentNode] + costs[currentNode][x]) {
+                if (!inQueue[x]) {
+                    inQueue[x] = 1;
+                    bellmanFord.push(x);
+                }
+                distances[x] = distances[currentNode] + costs[currentNode][x];
+                father[x] = currentNode;
+            }
+        }
+    }
+    if (distances[target] == (1 << 29)) {
+        return false;
+    }
+    int acceptableCappacity = (1 << 20);
+    int currentNode = target;
+    while (currentNode != source) {
+        acceptableCappacity = min(acceptableCappacity, capacity[father[currentNode]][currentNode] - flow[father[currentNode]][currentNode]);
+        currentNode = father[currentNode];
+    }
+    currentNode = target;
+    assert(acceptableCappacity > 0);
+    while (currentNode != source) {
+        flow[father[currentNode]][currentNode] += acceptableCappacity;
+        flow[currentNode][father[currentNode]] -= acceptableCappacity;
+        currentCost += acceptableCappacity * costs[father[currentNode]][currentNode];
+        currentNode = father[currentNode];
+    }
+    return true;
+}
+ 
+int getMinimumCost (int source, int target) {
+    int currentCost = 0;
+    int currentFlow = 0;
+    while (updateFlow(currentCost, source, target));
+    return currentCost;
+}
+ 
+bool isPossible (int n, int myAttack, int myDefencive, int numberOfMinions) {
+    int maximumCost = myDefencive + numberOfMinions - 1, source, target;
+    buildGraph(n, myAttack, numberOfMinions, source, target);
+    int totalCost = getMinimumCost(source, target);
+    return totalCost < maximumCost;
+}
+ 
+int main() {
+    ifstream fin ("hsattack.in");
+    ofstream fout ("hsattack.out");
+    int t;
+    assert (fin >> t);
+    assert (1 <= t and t <= 20);
+    while (t --) {
+        int myAttack, myDefencive;
+        int n;
+        assert (fin >> myAttack >> myDefencive >> n);
+        assert (1 <= myAttack and myAttack <= 10000);
+        assert (1 <= myDefencive and myDefencive <= 10000);
+        assert (1 <= n and n <= 500);
+        for (int i = 1; i <= n; ++i) {
+            assert (fin >> attack[i] >> defencive[i]);
+            assert (1 <= attack[i] and attack[i] <= 10000);
+            assert (1 <= defencive[i] and defencive[i] <= 10000);
+        }
+        int myResult = 0;
+        for (int power = 8; power >= 0; power--) {
+            if (myResult + (1 << power) <= n and isPossible(n, myAttack, myDefencive, myResult + (1 << power))) {
+                myResult += (1 << power);
+            }
+        }
+        fout << myResult << '\n';
+    }
+    return 0;
+}

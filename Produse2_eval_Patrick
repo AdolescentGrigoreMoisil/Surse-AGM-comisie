@@ -1,0 +1,134 @@
+/*Patrick Catalin Alexandru Sava
+The University of Manchester
+Validator for the contestant's solution
+Problem : Produse2*/
+
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <bitset>
+
+using namespace std;
+
+void verdict(char msg[],int p) {
+    fprintf(stderr,msg);
+    fprintf(stdout,"%d",p);
+    exit(0);
+}
+
+void ifNegative (int number)
+{
+    if (number < 0) 
+    {
+        verdict(const_cast<char *>("Fisier de iesire corupt"), 0);
+    }
+}
+
+const int MAX = 4e5;
+int A [MAX];
+
+
+int main(){
+    const char input[] =     "produse2.in";
+    const char committee[] = "produse2.ok";
+    const char contestant[] ="produse2.out";
+
+    ifstream inputStream (input);
+    if (!inputStream.is_open())
+    {
+        verdict(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+    }
+    ifstream committeeStream (committee);
+    if (!committeeStream.is_open())
+    {
+        verdict(const_cast<char *>("Fisier .ok corupt - anuntati comisia"), 0);
+    }
+    ifstream contestantStream (contestant);
+    if (!contestantStream.is_open())
+    {
+        verdict(const_cast<char *>("Fisier de iesire corupt"), 0);
+    }
+    int numberOfTests;
+    if (inputStream >> numberOfTests)
+    {
+        for (int currentTest = 1; currentTest <= numberOfTests; ++ currentTest)
+        {
+            int numberOfElements;
+            if (inputStream >> numberOfElements)
+            {
+                int ourNumber;
+                if ((committeeStream >> ourNumber))
+                {
+                    int contestantNumber;
+                    if (contestantStream >> contestantNumber)
+                    {
+                        ifNegative(contestantNumber);
+                        if (contestantNumber != ourNumber)
+                        {
+                            verdict(const_cast<char *>("Incorect"), 0);
+                        }
+                        else 
+                        {
+                            if (ourNumber == 0)
+                            {
+                                for (int currentIndex = 1; currentIndex < numberOfElements; ++ currentIndex)
+                                {
+                                    int product;
+                                    if (!(inputStream >> product))
+                                    {
+                                        verdict(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int currentIndex = 1; currentIndex <= numberOfElements; ++ currentIndex)
+                                {
+                                    if (!(contestantStream >> A [currentIndex]))
+                                    {
+                                        verdict(const_cast<char *>("Fisier de iesire corupt"), 0);
+                                    }
+                                    ifNegative(A[currentIndex]);
+                                }
+                                for (int currentIndex = 1; currentIndex < numberOfElements; ++ currentIndex)
+                                {
+                                    int product;
+                                    if (inputStream >> product)
+                                    {
+                                        if (A[currentIndex] * A[currentIndex + 1] != product)
+                                        {
+                                            verdict(const_cast<char *>("Incorect"), 0);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        verdict(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        verdict(const_cast<char *>("Fisier de iesire corupt"), 0);
+                    }
+                }
+                else
+                {
+                    verdict(const_cast<char *>("Fisier .ok corupt - anuntati comisia"), 0);
+                }
+            }
+            else
+            {
+                verdict(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);  
+            }
+        }
+    }
+    else
+    {
+        verdict(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);    
+    }
+    verdict(const_cast<char *>("Correct"), 25); 
+    return 0;
+}

@@ -1,0 +1,196 @@
+/*Patrick Catalin Alexandru Sava
+The University of Manchester
+Pastrama si Afaceri - worst coding style ever
+Expected: 100*/
+ 
+#include <fstream>
+#include <vector>
+#include <bitset>
+#include <stack>
+#include <algorithm>
+ 
+using namespace std ;
+ 
+const int MAX = static_cast<const int>(3e5 + 14);
+ 
+vector <int> gr [MAX];
+ 
+ifstream cin ("pastrafaceri.in");
+ofstream cout ("pastrafaceri.out");
+ 
+long long cost [MAX];
+ 
+vector <int> cicl [MAX];
+int nrCicl;
+ 
+bitset <MAX> viz;
+ 
+vector <int> st;
+int tata [MAX];
+ 
+vector <int> newGr [MAX];
+bitset <MAX> alreadyChosed;
+int where [MAX];
+int seen [MAX];
+ 
+void dfs (int nod)
+{
+    tata [nod] = 0;
+    seen [MAX] = 1;
+    st.push_back(nod);
+    while (st.size())
+    {
+        viz [nod] = 1;
+        nod = st.back();
+        bool advance = false;
+        for (auto &x : gr [nod])
+        {
+            if (alreadyChosed[x])
+            {
+                continue;
+            }
+            if (viz[x]) {
+                if (tata [nod] == x)
+                {
+                    continue;
+                }
+                nrCicl += 1;
+                for (int i = (int)st.size() - 1; i >= 0 ; -- i)
+                {
+                    cicl[nrCicl].push_back(st[i]);
+                    alreadyChosed[st[i]] = 1;
+                    where [st[i]] = nrCicl;
+                    if (st [i] == x) break;
+                }
+                reverse(cicl[nrCicl].begin(), cicl[nrCicl].end());
+            }
+            else {
+                tata [x] = nod;
+                seen [x] = seen [nod] + 1;
+                st.push_back(x);
+                advance = true;
+                break;
+            }
+        }
+        if (!advance)
+        {
+            if (alreadyChosed[nod] == 0)
+            {
+                nrCicl += 1;
+                cicl [nrCicl].push_back(nod);
+                where [nod] = nrCicl;
+                alreadyChosed[nod] = 1;
+            }
+ 
+            for (auto &x : gr [nod]) {
+                if (seen [x] > seen [nod] and where [nod] != where [x])
+                {
+                    newGr [where [nod]].push_back(where[x]);
+                }
+            }
+            st.pop_back();
+        }
+    }
+}
+ 
+long long down [MAX];
+ 
+long long globalAnswer;
+deque <int> d;
+long long costHuge [MAX];
+ 
+ 
+long long dp [MAX];
+long long sufMax [MAX];
+long long prefMax [MAX];
+ 
+void solve (int which)
+{
+    while (!d.empty())
+        d.pop_back();
+    vector <int> v;
+    int target = cicl[which][0];
+    for (auto &x : cicl [which])
+        v.push_back(x);
+    for (auto &x : cicl [which])
+        v.push_back(x);
+    costHuge [which] = 0;
+    int len = 0;
+    long long S = 0;
+    for (auto &x : cicl [which])
+    {
+        for (auto &y : gr [x])
+        {
+            if (where [y] != which and seen [y] > seen [x])
+                cost [x] += max (0LL, dp [where[y]]);
+        }
+    }
+    for (auto &x : v) {
+        len += 1;
+        S += cost [x];
+        d.push_back(x);
+        while (len > cicl[which].size() and d.size())
+        {
+            S -= cost [d.front()];
+            d.pop_front();
+            len -= 1;
+        }
+        while (S < 0 and d.size())
+        {
+            S -= cost[d.front()];
+            d.pop_front();
+            len -= 1;
+        }
+        globalAnswer = max (globalAnswer, S);
+    }
+    int lim = (int)cicl[which].size() - 1;
+    S = 0;
+    prefMax [0] = 0;
+    for (int i = 1; i <= lim; ++ i)
+    {
+        int cur = cicl[which][i];
+        S += cost [cur];
+        prefMax [i] = max (prefMax[i - 1], S);
+    }
+    S = 0;
+    sufMax [lim + 1] = 0;
+    for (int i = lim; i >= 1; -- i)
+    {
+        int cur = cicl [which][i];
+        S += cost[cur];
+        sufMax [i] = max (sufMax [i + 1], S);
+    }
+    for (int i = 0; i <= lim; ++ i)
+    {
+        costHuge[which] = max (costHuge[which], sufMax[i + 1] + prefMax[i] + cost [target]);
+    }
+}
+ 
+void dfsCompact (int node)
+{
+    for (auto &x : newGr[node])
+        dfsCompact(x);
+    solve (node);
+    dp [node] = costHuge[node];
+    globalAnswer = max (globalAnswer, dp[node]);
+}
+ 
+int main() {
+    int n, m;
+    cin >> n >> m ;
+    for (int i = 1 ; i <= n ; ++ i)
+    {
+        cin >> cost [i];
+    }
+    while (m --)
+    {
+        int x, y;
+        cin >> x >> y;
+        gr [x].push_back(y);
+        gr [y].push_back(x);
+    }
+    dfs(1);
+    dfsCompact(where[1]);
+    cout << globalAnswer << '\n';
+    return 0;
+}

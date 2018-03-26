@@ -1,0 +1,63 @@
+/*
+ * Autor: George Marcus
+ * AC
+ */
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+set<pair<int, int> > points;
+vector<tuple<int, int, int> > answer;
+ 
+void generatePoint(int x, int y, int d) {
+  if (points.count({ x, y }) == 0) {
+    answer.emplace_back(x, y, d);
+    points.insert({ x, y });
+  }
+}
+ 
+void generateStructure(int sx, int sy, int d) {
+  generatePoint(sx + d, sy, d);
+  generatePoint(sx + 3 * d, sy, d);
+  generatePoint(sx + 2 * d, sy, 2 * d);
+  generatePoint(sx + 2 * d, sy - d, d);
+}
+ 
+void generateComplexStructure(int sx, int sy, int d) {
+  generateStructure(sx + 2 * d, sy - 2 * d, d);
+ 
+  generateStructure(sx + d, sy - d, d);
+  generateStructure(sx + 3 * d, sy - d, d);
+ 
+  generateStructure(sx, sy, 2 * d);
+}
+ 
+void solve() {
+  const int X = 10;
+  const int Y = 10;
+  const int D = 1;
+  generateComplexStructure(X, Y, D);
+  generateComplexStructure(X + 8 * D, Y, D);
+  generateComplexStructure(X + 16 * D, Y, D);
+ 
+  generateStructure(X + 4 * D, Y - 4 * D, 4 * D);
+ 
+  generateStructure(X + 2 * D, Y - 2 * D, 2 * D);
+  // or generateStructure(X + 8 * D + 2 * D, Y - 2 * D, 2 * D);
+}
+ 
+int main() {
+  assert(freopen("cutremur.out", "w", stdout));
+ 
+  solve();
+ 
+  cout << points.size() << '\n';
+  for (auto point : answer) {
+    int x = get<0>(point);
+    int y = get<1>(point);
+    int d = get<2>(point);
+    cout << x << ' ' << y << ' ' << d << '\n';
+  }
+ 
+  return 0;
+}

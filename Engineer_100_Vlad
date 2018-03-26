@@ -1,0 +1,230 @@
+/*
+Vlad-Andrei Munteanu
+University of Manchester
+Persistent Segment Tree - Static
+Normalizare - sortare
+Expected: 100
+*/
+  
+#include <bits/stdc++.h>
+  
+using namespace std;
+  
+//Parsare
+class Reader {
+public:
+    Reader(const string& filename):
+            m_stream(filename),
+            m_pos(kBufferSize - 1),
+            m_buffer(new char[kBufferSize]) {
+        next();
+    }
+  
+    Reader& operator>>(int& value) {
+        value = 0;
+        while (current() < '0' || current() > '9')
+            next();
+        while (current() >= '0' && current() <= '9') {
+            value = value * 10 + current() - '0';
+            next();
+        }
+        return *this;
+    }
+  
+private:
+    const int kBufferSize = 32768;
+  
+    char current() {
+        return m_buffer[m_pos];
+    }
+  
+    void next() {
+        if (!(++m_pos != kBufferSize)) {
+            m_stream.read(m_buffer.get(), kBufferSize);
+            m_pos = 0;
+        }
+    }
+  
+    ifstream m_stream;
+    int m_pos;
+    unique_ptr<char[]> m_buffer;
+};
+//Parsare
+  
+//Structuri
+struct nod //persistent
+{
+    int left;
+    int right;
+    int value;
+};
+  
+struct normal //normalizare
+{
+    int value;
+    int i, j;
+};
+//Structuri
+  
+//Declarari
+normal v[1300000]; //normalizare
+nod nodes[27000000]; //persistent
+int roots[1101][1101]; //radacinile
+int currentNode;
+int adaug[1101]; //radacinile de adunat
+int scad[1101]; //radacinile de scazut
+int invers[1300000]; //invers normalizat
+int mat[1101][1101]; //din input
+//Declarari
+  
+//newNode -> pentru persistent static
+int newNode (int node)
+{
+    ++currentNode;
+    nodes[currentNode] = nodes[node];
+    return currentNode;
+}
+//newNode
+  
+//addValue -> in persistent
+int addValue (int node, int st, int dr, int pos)
+{
+    node = newNode(node);
+    if (st == dr)
+    {
+        nodes[node].value++;
+        return node;
+    }
+    int mij = st + dr >> 1;
+    if (pos <= mij)
+        nodes[node].left = addValue (nodes[node].left, st, mij, pos);
+    else
+        nodes[node].right = addValue (nodes[node].right, mij+1, dr, pos);
+    nodes[node].value = nodes[nodes[node].left].value + nodes[nodes[node].right].value;
+    return node;
+}
+//addValue
+  
+  
+//finalQuery
+int finalQuery (int k, int size, int st, int dr)
+{
+    while (st != dr)
+    {
+        int sum = 0;
+        for (int i = 0; i<size; ++i)
+            sum = sum + nodes[nodes[adaug[i]].left].value - nodes[nodes[scad[i]].left].value;
+        if (k <= sum)
+        {
+            for (int i = 0; i<size; ++i)
+            {
+                adaug[i] = nodes[adaug[i]].left;
+                scad[i] = nodes[scad[i]].left;
+            }
+            dr = (st + dr >> 1);
+        }
+        else
+        {
+            k -= sum;
+            for (int i = 0; i<size; ++i)
+            {
+                adaug[i] = nodes[adaug[i]].right;
+                scad[i] = nodes[scad[i]].right;
+            }
+            st = (st + dr >> 1);
+            ++st;
+        }
+    }
+    return st;
+}
+//finalQuery
+  
+//query -> construieste vectorii scad si adaug si raspunde la query
+int query (int x1, int y1, int x2, int y2, int k, int valMax)
+{
+    int size = x2 - x1 + 1;
+    for (int i = x1; i <= x2; ++i)
+    {
+        adaug[i - x1] = roots[i][y2];
+        scad[i - x1] = roots[i][y1 - 1];
+    }
+    return finalQuery (k, size, 1, valMax);
+}
+//query
+  
+//cmp -> pentru sort
+class cmp
+{
+public:
+    bool operator () (const normal &a, const normal &b) const
+    {
+        return a.value < b.value;
+    }
+};
+//cmp
+  
+//main
+int main(int argc, char const *argv[])
+{
+    //Reader fin ("engineer.in"); pentru parsare
+    ifstream fin ("engineer.in");
+    ofstream fout ("engineer.out");
+  
+    //citire - inceput
+    int n, m, howmany = 0;
+    assert (fin >> n >> m);
+//    assert(n == m);
+    assert (1 <= n and n <= 1100);
+    assert (1 <= m and m <= 1100);
+    for (int i = 1; i<=n; ++i)
+        for (int j = 1; j<=m; ++j)
+        {
+            assert (fin >> mat[i][j]);
+            assert (1 <= mat[i][j] and mat[i][j] <= 1000000000);
+            v[howmany].value = mat[i][j];
+            v[howmany].i = i;
+            v[howmany].j = j;
+            ++howmany;
+        }
+    //citire - final
+  
+    //normalizare - inceput
+    sort (v, v + howmany, cmp());
+    int cnt = 0;
+    for (int i = 0; i<howmany; ++i)
+    {
+        if (i == 0 || v[i].value > v[i-1].value)
+            ++cnt;
+        invers[cnt] = v[i].value;
+        mat[v[i].i][v[i].j] = cnt;
+    }
+    //normalizare - final
+  
+    //construieste persistent - inceput
+    for (int i = 1; i<=n; ++i)
+        for (int j = 1; j<=m; ++j)
+            roots[i][j] = addValue (roots[i][j-1], 1, cnt, mat[i][j]);
+    //construieste persistent - final
+  
+    //queries - inceput
+    int q;
+    assert (fin >> q);
+    assert (1 <= q and q <= 1000);
+    for (int i = 1; i<=q; ++i)
+    {
+        int x1, y1, x2, y2, k;
+        fin >> x1 >> y1 >> x2 >> y2 >> k;
+        assert (1 <= x1 and x1 <= n);
+        assert (1 <= x2 and x2 <= n);
+        assert (1 <= y1 and y1 <= m);
+        assert (1 <= y2 and y2 <= m);
+        assert (x1 <= x2);
+        assert (y1 <= y2);
+        assert (1 <= k and k <= n*m);
+        fout << invers[query (x1, y1, x2, y2, k, cnt)] << '\n';
+    }
+    //queries - final
+  
+    return 0;
+}
+//main

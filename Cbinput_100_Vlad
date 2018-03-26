@@ -1,0 +1,67 @@
+/*
+Vlad-Andrei Munteanu
+University of Manchester
+Expected: 100
+*/
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+int ans[1005];
+ 
+int main(int argc, char const *argv[])
+{
+    ifstream fin ("cbinput.in");
+    ofstream fout ("cbinput.out");
+ 
+    int t;
+    ans[0] = 1;
+ 
+    assert (fin >> t);
+    assert (1 <= t and t <= 100);
+    for (int tests = 1; tests <= t; ++tests)
+    {
+        int n, k, copyOfK;
+        assert (fin >> n >> k);
+        assert (1 <= n and n <= 1000);
+        assert (1 <= k and k <= 1000);
+ 
+        copyOfK = k;
+        for (int i = 1; i <= n; ++i)
+            ans[i] = 0;
+ 
+        int st = 1, dr = n;
+        while (st <= dr)
+        {
+            int mij = st + dr >> 1;
+            ans [mij] = copyOfK;
+            --copyOfK;
+            dr = mij - 1;
+        }
+        if (copyOfK <= 0)
+        {
+            for (int i = 1; i <= n; ++i)
+                if (ans[i] <= 0)
+                    ans[i] = ans[i - 1];
+        }
+        else
+        {
+            for (int i = 1; i <= n; ++i)
+                if (ans[i] <= 0)
+                    ans[i] = ans[i-1];
+            for (int i = 1; i <= n; ++i)
+                ans[i] -= copyOfK;
+            for (int i = n; i >= 1 and k != ans[i]; --i)
+            {
+                ans[i] = k;
+                --k;
+            }
+        }
+         
+        for (int i = 1; i <= n; ++i)
+            fout << ans[i] << ' ';
+        fout << '\n';
+    }
+    return 0;
+}

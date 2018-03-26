@@ -1,0 +1,100 @@
+/* Stelian Chichirim
+ * Complexitate: O(N*log(N)*nr_factori_prim)
+ * Expected: AC
+ */
+ 
+#include <cstdio>
+#include <vector>
+#include <queue>
+ 
+using namespace std;
+ 
+struct edge
+{
+    int nod,cost;
+    bool operator <(const edge aux) const
+    {
+        return cost>aux.cost;
+    }
+};
+ 
+const int inf=1e9;
+ 
+vector<pair<long long,int>> factorprim;
+vector<int> v[100010];
+priority_queue<edge> q;
+int n,ans[100010],d[100010],tata[100010],put_alcool[100010];
+long long alcool[100010];
+ 
+int dijkstra(int poz_prim)
+{
+    for(int i=1;i<=n;i++)
+    {
+        d[i]=inf;
+        int putere=0;
+        while(alcool[i]%factorprim[poz_prim].first==0) {putere++;alcool[i]/=factorprim[poz_prim].first;}
+        put_alcool[i]=putere;
+    }
+    d[1]=put_alcool[1];
+    q.push({1,d[1]});
+    while(!q.empty())
+    {
+        int nod=q.top().nod,cost=q.top().cost;
+        q.pop();
+        if(cost>d[nod]) continue;
+        for(int i=0;i<v[nod].size();i++)
+        {
+            int vec=v[nod][i],c=put_alcool[vec];
+            if(cost+c<d[vec])
+            {
+                d[vec]=cost+c;
+                tata[vec]=nod;
+                q.push({vec,d[vec]});
+            }
+        }
+    }
+    return d[n];
+}
+ 
+int main()
+{
+    freopen("pesaptecarari.in","r",stdin);
+    freopen("pesaptecarari.out","w",stdout);
+    long long k;
+    int m,x,y;
+    scanf("%d%d%lld",&n,&m,&k);
+    for(int i=1;i<=n;i++) scanf("%lld",&alcool[i]);
+    for(int i=1;i<=m;i++)
+    {
+        scanf("%d%d",&x,&y);
+        v[x].push_back(y);
+    }
+    long long lim=k;
+    for(int divprim=2;1LL*divprim*divprim<=lim;divprim++)
+        if(k%divprim==0)
+        {
+            int putere=0;
+            while(k%divprim==0) {putere++;k/=divprim;}
+            factorprim.push_back({divprim,putere});
+        }
+    if(k>1) factorprim.push_back({k,1});
+    int l=0,sol=inf;
+    for(int i=0;i<factorprim.size();i++)
+    {
+        int putmin=dijkstra(i);
+        if(putmin/factorprim[i].second<sol)
+        {
+            sol=putmin/factorprim[i].second;
+            l=0;
+            int nod=n;
+            while(nod!=0)
+            {
+                ans[++l]=nod;
+                nod=tata[nod];
+            }
+        }
+    }
+    printf("%lld\n",1LL*sol);
+    for(int i=l;i>=1;i--) printf("%lld ",1LL*ans[i]);
+    return 0;
+}

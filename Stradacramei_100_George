@@ -1,0 +1,179 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+int MOD = 924844033; //The modulus given in the statement
+int G = 5; //To be Found by running findGenerator
+vector<int> primes = {2, 3, 7}; //Prime divisors of MOD - 1
+ 
+int add(int a, int b) {
+    int ans = a + b;
+    if (ans >= MOD)
+        ans -= MOD;
+    return ans;
+}
+int subtr(int a, int b) {
+    int ans = a - b;
+    if (ans < 0)
+        ans += MOD;
+    return ans;
+}
+ 
+int raise(int a, int b) {
+    if (!b)
+        return 1;
+    else if (b & 1)
+        return (1LL * raise(a, b - 1) * a) % MOD;
+    else {
+        int aux = raise(a, b >> 1);
+        return (1LL * aux * aux) % MOD;
+    }
+}
+inline int getInv(int x) {
+    return raise(x, MOD - 2);
+}
+ 
+bool isGenerator(int nr) {
+    for (auto it: primes)
+        if (raise(nr, (MOD - 1) / it) == 1)
+            return false;
+    return true;
+}
+int findGenerator() {
+    int g = 2;
+    while (!isGenerator(g))
+        ++ g;
+    return g;
+}
+ 
+const int BITSMAX = 19;
+const int NMAX    = (1 << BITSMAX);
+ 
+int w[2][2 * NMAX];
+void precomputeRoots() {
+    w[0][1] = w[1][1] = 1;
+    for (int k = 1; k <= BITSMAX; ++ k) {
+        int W0 = raise(G, ((MOD - 1) / (1 << k)));
+        int W1 = getInv(W0);
+        const int bound = (1 << k);
+        for (int i = (1 << (k - 1)); i < bound; ++ i) {
+            w[0][2 * i] = w[0][i], w[0][2 * i + 1] = (1LL * w[0][i] * W0) % MOD;
+            w[1][2 * i] = w[1][i], w[1][2 * i + 1] = (1ll * w[1][i] * W1) % MOD;
+        }
+    }
+}
+ 
+int rev[NMAX];
+void computeRevs(int N) {
+    for (int i = 1; i < N; ++ i) {
+        rev[i] = rev[i >> 1] >> 1;
+        if (i & 1)
+            rev[i] += N / 2;
+    }
+}
+ 
+void ntt(int v[], const int BITS, const bool inv = false) {
+    //static bool computed = false;
+    //if (!computed)
+    //    precomputeRoots(), computed = true;
+    const int N = (1 << BITS);
+    computeRevs(N);
+    for (int i = 0; i < N; ++ i)
+        if (i < rev[i])
+            swap(v[i], v[rev[i]]);
+    for (int len = 1; len < N; len <<= 1) {
+        for (int start = 0; start < N; start += 2 * len) {
+            for (int i = 0; i < len; ++ i) {
+                const int b = (1LL * v[start + i + len] * w[inv][2 * len + i]) % MOD;
+                v[start + i + len] = subtr(v[start + i], b);
+                v[start + i] = add(v[start + i], b);
+            }
+        }
+    }
+    if (inv) {
+        int aux = getInv(N);
+        for (int i = 0; i < N; ++ i)
+            v[i] = (1LL * v[i] * aux) % MOD;
+    }
+}
+ 
+int pointsA[NMAX];
+int pointsB[NMAX];
+int pointsRes[NMAX];
+template <typename RandomIt>
+void convolute(RandomIt a, int Na, RandomIt b, int Nb, RandomIt res) {
+    if (1LL * Na * Nb <= 16 * 16) {
+        for (int i = 0; i < Na + Nb; ++ i)
+            res[i] = 0;
+        for (int i = 0; i < Na; ++ i)
+            for (int j = 0; j < Nb; ++ j)
+                res[i + j] = (res[i + j] + 1LL * a[i] * b[j]) % MOD;
+        return ;
+    }
+ 
+    int BITS = 0;
+    while ((1 << BITS) < Na + Nb - 1) ++ BITS;
+    const int N = (1 << BITS);
+ 
+    for (int i = 0; i < Na; ++ i)
+        pointsA[i] = a[i];
+    for (int i = Na; i < N; ++ i)
+        pointsA[i] = 0;
+    for (int i = 0; i < Nb; ++ i)
+        pointsB[i] = b[i];
+    for (int i = Nb; i < N; ++ i)
+        pointsB[i] = 0;
+ 
+    ntt(pointsA, BITS);
+    ntt(pointsB, BITS);
+ 
+    for (int i = 0; i < N; ++ i)
+        pointsRes[i] = (1LL * pointsA[i] * pointsB[i]) % MOD;
+ 
+    ntt(pointsRes, BITS, true);
+ 
+    for (int i = 0; i < N; ++ i)
+        res[i] = pointsRes[i];
+}
+ 
+const int baza=223;
+const int mod1=924844033, gen1=5;
+const int mod2=167772161, gen2=3;
+ 
+int freqA[NMAX],freqB[NMAX],freqC[NMAX],sol[2][NMAX];
+string sir1,sir2;
+ 
+void solve(int mod,int gen,int sol[])
+{
+    int h=0,p=1;
+    for(int i=0;i<sir1.size();i++)
+    {
+        p=(1LL*p*baza)%mod;
+        if(sir1[i]=='?') freqA[i]=0;
+        else freqA[i]=p;
+        if(sir1[i]!='?') h=(h+1LL*sir1[i]*p)%mod;
+    }
+    reverse(freqA,freqA+sir1.size());
+    for(int i=0;i<sir2.size();i++)
+        freqB[i]=sir2[i];
+    MOD=mod;
+    G=gen;
+    precomputeRoots();
+    convolute(freqA,sir1.size(),freqB,sir2.size(),freqC);
+    for(int i=0;i<=sir2.size()-sir1.size();i++)
+        if(freqC[sir1.size()+i-1]==h) sol[i]=1;
+}
+ 
+int main()
+{
+    ifstream cin("stradacramei.in");
+    ofstream cout("stradacramei.out");
+    cin>>sir1>>sir2;
+    solve(mod1,gen1,sol[0]);
+    solve(mod2,gen2,sol[1]);
+    int cnt=0;
+    for(int i=0;i<sir2.size();i++)
+        if(sol[0][i] && sol[1][i]) cnt++;
+    cout<<cnt;
+    return 0;
+}

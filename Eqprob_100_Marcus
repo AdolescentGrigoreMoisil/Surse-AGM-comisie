@@ -1,0 +1,68 @@
+/*
+ * George Marcus
+ * Solutia: O(N^3) programare dinamica
+ * AC
+ */
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+#define MAXN 55
+ 
+string S;
+int N;
+long double dp[MAXN][MAXN];
+ 
+double solve() {
+  double ans = 0.0;
+  for (int k = 0; k < N; k++) {
+    memset(dp, 0, sizeof(dp));
+    dp[0][0] = 1.0;
+    int sz = N - k;
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j <= sz; j++) {
+        double prob = 0.5;
+        if (j < sz && S[i] == S[j + k]) {
+          dp[i + 1][j + 1] += dp[i][j] * prob;
+        }
+        dp[i + 1][j] += dp[i][j] * prob;
+      }
+    }
+     
+    for (int j = 1; j <= sz; j++) {
+      ans += dp[N][j];
+    }
+  }
+   
+  double prob = 1.0;
+  for (int i = 0; i < N; i++) {
+    prob *= 2;
+  }
+  ans = ans * prob / (prob - 1);
+   
+  ans /= N * (N + 1) / 2;
+ 
+  return ans;
+}
+ 
+int main() {
+  assert(freopen("eqprob.in", "r", stdin));
+  assert(freopen("eqprob.out","w", stdout));
+  cin.sync_with_stdio(false);
+   
+  int T;
+  cin >> T;
+  assert(1 <= T && T <= 10);
+ 
+  while (T--) {
+    cin >> N;
+    cin >> S;
+    assert((int) S.size() == N);
+    assert(1 <= N && N <= 50);
+     
+    double ans = solve();
+    cout << fixed << setprecision(12) << ans << endl;
+  }
+   
+  return 0;
+}

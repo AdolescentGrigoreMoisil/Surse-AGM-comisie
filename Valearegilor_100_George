@@ -1,0 +1,83 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * O(N * logN + Q)
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int MaxN=100010;
+int v[MaxN],fiu[MaxN][2],size[MaxN],rmq[20][2*MaxN],first[MaxN],logg[2*MaxN],niv[MaxN],sumst[MaxN],sumdr[MaxN],nr;
+ 
+void dfs1(int nod,int lev)
+{
+    size[nod]=1;
+    rmq[0][++nr]=nod;
+    first[nod]=nr;
+    niv[nod]=lev;
+    for(int i=0;i<2;i++)
+        if(fiu[nod][i])
+        {
+            dfs1(fiu[nod][i],lev+1);
+            size[nod]+=size[fiu[nod][i]];
+            rmq[0][++nr]=nod;
+        }
+}
+ 
+void dfs2(int nod,int sst,int sdr)
+{
+    sumst[nod]=sst+size[fiu[nod][0]];
+    sumdr[nod]=sdr+size[fiu[nod][1]];
+    if(fiu[nod][0]) dfs2(fiu[nod][0],sst,sdr+size[fiu[nod][1]]);
+    if(fiu[nod][1]) dfs2(fiu[nod][1],sst+size[fiu[nod][0]],sdr);
+}
+ 
+int lca(int x,int y)
+{
+    x=first[x];y=first[y];
+    if(x>y) swap(x,y);
+    int l=logg[y-x+1];
+    if(niv[rmq[l][x]]<niv[rmq[l][y-(1<<l)+1]]) return rmq[l][x];
+    else return rmq[l][y-(1<<l)+1];
+}
+ 
+int main()
+{
+    freopen("valearegilor.in", "r", stdin);
+    freopen("valearegilor.out", "w", stdout);
+    int n,m;
+    scanf("%d%d",&n,&m);
+    for(int i=1;i<=n;i++) scanf("%d",&v[i]);
+    vector<int> q;
+    q.push_back(1);
+    for(int i=2;i<=n;i++)
+    {
+        for(;q.size() && v[q.back()]>v[i];q.pop_back())
+            fiu[i][0]=q.back();
+        if(q.size()) fiu[q.back()][1]=i;
+        q.push_back(i);
+    }
+    int rad=q[0];
+    dfs1(rad,0);
+    for(int i=2;i<=nr;i++) logg[i]=logg[i/2]+1;
+    for(int i=1;i<=logg[nr];i++)
+    {
+        int lim=nr-(1<<i)+1;
+        for(int j=1;j<=lim;j++)
+            if(niv[rmq[i-1][j]]<niv[rmq[i-1][j+(1<<(i-1))]]) rmq[i][j]=rmq[i-1][j];
+            else rmq[i][j]=rmq[i-1][j+(1<<(i-1))];
+    }
+    dfs2(rad,0,0);
+    for(int i=1;i<=m;i++)
+    {
+        int x,y;
+        scanf("%d%d",&x,&y);
+        int sol=y-x+1;
+        int l=lca(x,y);
+        sol-=sumdr[x]-sumdr[l]+sumst[y]-sumst[l];
+        printf("%d\n",sol);
+    }
+    return 0;
+}

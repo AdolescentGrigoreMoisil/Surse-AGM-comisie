@@ -1,0 +1,215 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int MaxN=100010;
+const long long inf=1e18;
+struct edge
+{
+    int nod,c;
+};
+vector<edge> g[MaxN],gt[MaxN],ginctc[MaxN],goutctc[MaxN];
+struct inheap
+{
+    int nod;
+    long long c;
+    bool operator <(const inheap &aux) const
+    {
+        return c>aux.c;
+    }
+};
+vector<vector<int> > comp;
+vector<int> q;
+vector<long long> din[2];
+int cecomp[MaxN],cnt[MaxN];
+char vaz[MaxN],tip[MaxN],ctcneg[MaxN],cicluneg[MaxN];
+ 
+void dfs1(int nod)
+{
+    vaz[nod]=1;
+    for(auto vec : g[nod])
+        if(!vaz[vec.nod]) dfs1(vec.nod);
+    q.push_back(nod);
+}
+ 
+void dfs2(int nod)
+{
+    vaz[nod]=0;
+    comp.back().push_back(nod);
+    cecomp[nod]=comp.size()-1;
+    for(auto vec : gt[nod])
+        if(vaz[vec.nod]) dfs2(vec.nod);
+}
+ 
+int check_neg_cycle(vector<int> &comp,vector<long long> &d)
+{
+    queue<int> q;
+    for(auto x : comp)
+    {
+        d[x]=cnt[x]=0;
+        vaz[x]=1;
+        q.push(x);
+    }
+    while(!q.empty())
+    {
+        int nod=q.front();q.pop();
+        vaz[nod]=0;
+        for(auto vec : ginctc[nod])
+            if(d[vec.nod]>d[nod]+vec.c)
+            {
+                d[vec.nod]=d[nod]+vec.c;
+                if(!vaz[vec.nod])
+                {
+                    if(++cnt[vec.nod]>comp.size()) return 1;
+                    vaz[vec.nod]=1;
+                    q.push(vec.nod);
+                }
+            }
+    }
+    return 0;
+}
+ 
+void gen_ctc(int n)
+{
+    for(int i=1;i<=n;i++)
+        if(!vaz[i]) dfs1(i);
+    for(int i=q.size()-1;i>=0;i--)
+        if(vaz[q[i]])
+        {
+            comp.push_back(vector<int>());
+            dfs2(q[i]);
+        }
+    for(int i=1;i<=n;i++)
+        for(auto vec : g[i])
+            if(cecomp[i]==cecomp[vec.nod])
+            {
+                ginctc[vec.nod].push_back({i,vec.c});
+                if(vec.c<0) ctcneg[cecomp[i]]=1;
+            }
+            else goutctc[i].push_back(vec);
+    vector<long long> d(n+1);
+    for(int i=0;i<comp.size();i++)
+        if(ctcneg[i]) cicluneg[i]=check_neg_cycle(comp[i],d);
+}
+ 
+long long get_val(long long a,long long s)
+{
+    if(a==-inf || a==inf) return a;
+    return a+s;
+}
+ 
+void dijkstra(vector<int> &comp,vector<long long> &d)
+{
+    priority_queue<inheap> h;
+    for(auto x : comp) h.push({x,d[x]});
+    while(!h.empty())
+    {
+        int nod=h.top().nod;
+        long long c=h.top().c;
+        h.pop();
+        if(d[nod]!=c) continue;
+        for(auto vec : ginctc[nod])
+            if(d[vec.nod]>get_val(d[nod],vec.c))
+            {
+                d[vec.nod]=get_val(d[nod],vec.c);
+                h.push({vec.nod,d[vec.nod]});
+            }
+    }
+}
+ 
+void bellman_ford(vector<int> &comp,vector<long long> &d)
+{
+    queue<int> q;
+    for(auto x : comp)
+    {
+        vaz[x]=1;
+        q.push(x);
+    }
+    while(!q.empty())
+    {
+        int nod=q.front();q.pop();
+        vaz[nod]=0;
+        for(auto vec : ginctc[nod])
+            if(d[vec.nod]>get_val(d[nod],vec.c))
+            {
+                d[vec.nod]=get_val(d[nod],vec.c);
+                if(!vaz[vec.nod])
+                {
+                    vaz[vec.nod]=1;
+                    q.push(vec.nod);
+                }
+            }
+    }
+}
+ 
+void solve(vector<long long> &din)
+{
+    for(int i=comp.size()-1;i>=0;i--)
+    {
+        for(auto nod : comp[i])
+        {
+            for(auto vec : goutctc[nod])
+                if(din[nod]>get_val(din[vec.nod],vec.c))
+                    din[nod]=get_val(din[vec.nod],vec.c);
+        }
+        if(!ctcneg[i]) dijkstra(comp[i],din);
+        else if(!cicluneg[i]) bellman_ford(comp[i],din);
+        else
+        {
+            int ok=0;
+            for(auto nod : comp[i])
+                if(din[nod]<inf) {ok=1;break;}
+            if(ok)
+                for(auto nod : comp[i])
+                    din[nod]=-inf;
+        }
+    }
+}
+ 
+int main()
+{
+    freopen("peapesimaitulburi.in", "r", stdin);
+    freopen("peapesimaitulburi.out", "w", stdout);
+    int n,m,x,y,c,nr;
+    scanf("%d%d",&n,&m);
+    for(int i=1;i<=m;i++)
+    {
+        scanf("%d%d%d",&x,&y,&c);
+        g[x].push_back({y,c});
+        gt[y].push_back({x,c});
+    }
+    vector<int> elem;
+    for(int i=0;i<3;i++)
+    {
+        scanf("%d",&nr);
+        for(int j=1;j<=nr;j++)
+        {
+            scanf("%d",&x);
+            tip[x]|=(1<<i);
+            if(i==0) elem.push_back(x);
+        }
+    }
+    gen_ctc(n);
+    din[0].resize(n+1);
+    din[1].resize(n+1);
+    for(int i=0;i<2;i++)
+        for(int j=1;j<=n;j++) din[i][j]=inf;
+    for(int i=1;i<=n;i++)
+        if(tip[i]&4) din[1][i]=0;
+    solve(din[1]);
+    for(int i=1;i<=n;i++)
+        if(tip[i]&2) din[0][i]=din[1][i];
+    solve(din[0]);
+    for(auto nod : elem)
+    {
+        if(din[0][nod]==-inf) printf("-INF\n");
+        else if(din[0][nod]==inf) printf("INF\n");
+        else printf("%lld\n",din[0][nod]);
+    }
+    return 0;
+}

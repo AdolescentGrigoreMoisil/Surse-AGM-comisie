@@ -1,0 +1,226 @@
+/*
+ * Solver: Vlad-Andrei Munteanu
+ * University: University of Manchester
+ * Problem: NTT
+ * Author: Vlad-Andrei Munteanu
+ * Contest: Adolescent Grigore Moisil
+ * Expected: Accepted
+ */
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+//declarations - begin
+const int MAXSize = 2e5;
+vector <int> solved[2];
+pair<pair <int, int>, int> modulos[6];
+pair <int, int> modulo1;
+pair <int, int> modulo2;
+int bases[6] = {1000000007, 333333339, 333333341, 333333347, 1000000123, 340373721};
+int base1;
+int base2;
+int generator1;
+int generator2;
+vector <int> inversions;
+vector <int> auxiliaryForInversions;
+//declarations - end
+ 
+bool checkPrimality (long long x) {
+    for (long long i = 2; i*i <= x; ++i)
+        if (x%i == 0)
+            return 0;
+    return 1;
+} //checkPrimality
+ 
+int givePower (int base, int exponent, int modulo) {
+    int result = 1;
+    for (; exponent; exponent >>= 1) {
+        if (exponent & 1) {
+            result = (1LL * result * base) % modulo;
+        }
+        base = (1LL * base * base) % modulo;
+    }
+    return result;
+} //givePower
+ 
+void getInversions (int left, int right) {
+    if (left == right) {
+        return;
+    }
+    for (int currentPosition = left; currentPosition <= right; ++currentPosition) {
+        if (currentPosition % 2 == 0) {
+            auxiliaryForInversions[left + ((currentPosition - left) >> 1)] = inversions[currentPosition];
+        }
+        else {
+            auxiliaryForInversions[left + ((right - left + 1) >> 1) + ((currentPosition - left) >> 1)] = inversions[currentPosition];
+        }
+    }
+    for (int currentPosition = left; currentPosition <= right; ++currentPosition) {
+        inversions[currentPosition] = auxiliaryForInversions[currentPosition];
+    }
+    getInversions(left, (right + left) >> 1);
+    getInversions((right + left + 1) >> 1, right);
+} //getInversions
+ 
+void NTT (vector <int>& polynomial, pair <int, int> modulo, int generator, bool inverse) {
+    int length = polynomial.size();
+    int constant = modulo.first;
+    int exponent = modulo.second;
+    int currentModulo = constant * (1 << exponent) + 1;
+ 
+    for (int currentPosition = 0; currentPosition < length; ++currentPosition) {
+        if (currentPosition < inversions[currentPosition]) {
+            swap(polynomial[currentPosition], polynomial[inversions[currentPosition]]);
+        }
+    }
+    for (int currentLength = 2; currentLength <= length; currentLength <<= 1) {
+        int updateRootWith = givePower(generator, (currentModulo - 1) / currentLength, currentModulo);
+        if (inverse) {
+            updateRootWith = givePower(updateRootWith, currentModulo - 2, currentModulo);
+        }
+        for (int currentStart = 0; currentStart < length; currentStart += currentLength) {
+            int currentRoot = 1;
+            for (int currentAdd = 0; currentAdd < (currentLength >> 1); ++currentAdd) {
+                int nextLeft = (1LL * polynomial[currentStart + currentAdd] +
+                                1LL * currentRoot * polynomial[currentStart + currentAdd + (currentLength >> 1)]) %
+                               currentModulo;
+                int nextRight = (1LL * polynomial[currentStart + currentAdd] -
+                                 1LL * currentRoot * polynomial[currentStart + currentAdd + (currentLength >> 1)]) %
+                                currentModulo;
+                polynomial[currentStart + currentAdd] = nextLeft;
+                polynomial[currentStart + currentAdd + (currentLength >> 1)] = (1LL * currentModulo + nextRight) % currentModulo;
+                currentRoot = (1LL * currentRoot * updateRootWith) % currentModulo;
+            }
+        }
+    }
+    if (inverse) {
+        int inverseOfLength = givePower(length, currentModulo - 2, currentModulo);
+        for (int currentValue = 0; currentValue < length; ++currentValue) {
+            polynomial[currentValue] = (1LL * polynomial[currentValue] * inverseOfLength) % currentModulo;
+        }
+    }
+} //NTT
+ 
+void buildNTT (vector <int>& targetNTT, string& target, vector<int>& whereNTT, string& where, int nextLength,
+               int currentModulo, int currentBase) {
+    for (int currentPosition = 0; currentPosition < nextLength; ++currentPosition) {
+        if (currentPosition < target.size() and target[currentPosition] != '?') {
+            targetNTT[currentPosition] = givePower(currentBase, (int)target.size() - currentPosition - 1, currentModulo);
+        }
+        else {
+            targetNTT[currentPosition] = 0;
+        }
+ 
+        if (currentPosition < where.size()) {
+            whereNTT[currentPosition] = (int)where[currentPosition];
+        }
+        else {
+            whereNTT[currentPosition] = 0;
+        }
+    }
+} //buildNTT
+ 
+void buildModulo () {
+    modulos[0] = {{5, 25}, 3};
+    modulos[1] = {{119, 23}, 3};
+    modulos[2] = {{7, 26}, 3};
+    modulos[3] = {{479, 21}, 3};
+    modulos[4] = {{483, 21}, 5};
+    modulos[5] = {{5, 25}, 3};
+} //buildModulo
+ 
+void setModulo () {
+    int index1 = rand() % 6;
+    int index2 = rand() % 6;
+    while (index1 == index2) {
+        index2 = rand() % 6;
+    }
+    modulo1 = modulos[index1].first;
+    modulo2 = modulos[index2].first;
+    generator1 = modulos[index1].second;
+    generator2 = modulos[index2].second;
+} //setModulo
+ 
+void setBase () {
+    base1 = bases[rand() % 6];
+    base2 = bases[rand() % 6];
+    while (base1 == base2) {
+        base2 = bases[rand() % 6];
+    }
+} //setBase
+ 
+void solveOneModulo (vector <int>& whereNTT, vector <int>& targetNTT, string& where, string& target, int nextLength,
+                     pair <int, int> currentModulo, int generatedModulo, int currentBase, int dimensionOfSize, int generator) {
+    vector <int> result (nextLength);
+    buildNTT(targetNTT, target, whereNTT, where, nextLength, generatedModulo, currentBase);
+    NTT(targetNTT, currentModulo, generator, false);
+    NTT(whereNTT, currentModulo, generator, false);
+    for (int currentPosition = 0; currentPosition < nextLength; ++currentPosition) {
+        result[currentPosition] = (1LL * targetNTT[currentPosition] * whereNTT[currentPosition]) % generatedModulo;
+    }
+    NTT(result, currentModulo, generator, true);
+    for (int currentPosition = 0; currentPosition < nextLength; ++currentPosition) {
+        solved[dimensionOfSize][currentPosition] = result[currentPosition];
+    }
+} //solveOneModulo
+ 
+int main() {
+    ifstream fin ("stradacramei.in");
+    ofstream fout ("stradacramei.out");
+    int currentLength, nextLength = 1, generatedModulo1, generatedModulo2;
+    int hash1 = 0, hash2 = 0;
+    string target;
+    string where;
+    vector <int> targetNTT;
+    vector <int> whereNTT;
+    assert(fin.is_open());
+    assert(fout.is_open());
+    assert(fin >> target >> where);
+    assert(target.size() <= where.size());
+    assert(target.size());
+    assert(where.size() <= MAXSize);
+ 
+    currentLength = where.size();
+    while (currentLength > nextLength) {
+        nextLength <<= 1;
+    }
+    nextLength <<= 1;
+    reverse(target.begin(), target.end());
+    targetNTT.resize(nextLength);
+    whereNTT.resize(nextLength);
+    solved[0].resize(nextLength);
+    solved[1].resize(nextLength);
+    inversions.resize(nextLength);
+    auxiliaryForInversions.resize(nextLength);
+    for (int currentPosition = 0; currentPosition < nextLength; ++currentPosition) {
+        inversions[currentPosition] = auxiliaryForInversions[currentPosition] = currentPosition;
+    }
+ 
+    getInversions(0, nextLength - 1);
+    buildModulo();
+    srand (7169);
+    setModulo();
+    setBase();
+    generatedModulo1 = modulo1.first * (1 << modulo1.second) + 1;
+    generatedModulo2 = modulo2.first * (1 << modulo2.second) + 1;
+ 
+    for (int currentPosition = 0; currentPosition < target.size(); ++currentPosition) {
+        if (target[currentPosition] != '?') {
+            hash1 = (hash1 + 1LL * (int) target[currentPosition] *
+                             givePower(base1, (int)target.size() - currentPosition - 1, generatedModulo1)) % generatedModulo1;
+            hash2 = (hash2 + 1LL * (int) target[currentPosition] *
+                             givePower(base2, (int)target.size() - currentPosition - 1, generatedModulo2)) % generatedModulo2;
+        }
+    }
+    solveOneModulo(whereNTT, targetNTT, where, target, nextLength,modulo1, generatedModulo1, base1, 0, generator1);
+    solveOneModulo(whereNTT, targetNTT, where, target, nextLength,modulo2, generatedModulo2, base2, 1, generator2);
+ 
+    int numberOfSimilarities = 0;
+    for (int currentPosition = target.size() - 1; currentPosition < currentLength; ++currentPosition) {
+        if (solved[0][currentPosition] == hash1 and solved[1][currentPosition] == hash2) {
+            ++numberOfSimilarities;
+        }
+    }
+    fout << numberOfSimilarities;
+    return 0;
+} //main

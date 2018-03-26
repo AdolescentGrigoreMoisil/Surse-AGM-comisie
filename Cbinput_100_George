@@ -1,0 +1,43 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+int v[1010];
+ 
+int main()
+{
+    freopen("cbinput.in", "r", stdin);
+    freopen("cbinput.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        int n,k;
+        scanf("%d%d",&n,&k);
+        for(int i=1;i<=n;i++) v[i]=0;
+        int cnt=k,st=1,dr=n;
+        while(st<=dr && cnt>0)
+        {
+            int mid=(st+dr)/2;
+            v[mid]=cnt--;
+            dr=mid-1;
+        }
+        v[0]=1;
+        for(int i=1;i<=n;i++)
+            if(v[i]==0) v[i]=v[i-1];
+        if(cnt>0)
+        {
+            for(int i=1;i<=n;i++)
+                v[i]-=cnt;
+            for(int i=n;i>=1 && v[i]!=k;i--)
+                v[i]=k--;
+        }
+        for(int i=1;i<=n;i++) printf("%d ",v[i]);
+        printf("\n");
+    }
+    return 0;
+}

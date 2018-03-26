@@ -1,0 +1,147 @@
+/*
+  Author: Cosmin Andrei Carabet
+  Workplace: Palantir Technologies
+  Time complexity: O(M * log N * log VMAX + N * log VMAX ^ 2)
+  Expected: Accepted
+*/
+#include <cstdio>
+#include <cassert>
+#include <vector>
+#include <algorithm>
+#include <bitset>
+#include <queue>
+using namespace std;
+ 
+const int NMAX = 100505;
+const int INF = 0x3f3f3f3f;
+ 
+// Graph structures
+int N, M;
+long long valueInNode[NMAX];
+vector<int> G[NMAX];
+ 
+// Factorization utils
+struct factorAndExp {
+  long long factor;
+  int exp;
+};
+ 
+// Product of interest
+long long K;
+vector<factorAndExp> factorsForK;
+ 
+void read() {
+  scanf("%d%d%lld", &N, &M, &K);
+  for (int i = 1; i <= N; i++) {
+    scanf("%lld", &valueInNode[i]);
+  }
+ 
+  int from, to;
+  for (int i = 1; i <= M; i++) {
+    scanf("%d%d", &from, &to);
+    G[from].push_back(to);
+  }
+}
+ 
+vector<factorAndExp> factorizeNumber(long long num) {
+  vector<factorAndExp> factors;
+  for (long long i = 2; i * i <= num; i++) {
+    if (num % i == 0) {
+      int exponent = 0;
+      while (num % i == 0) {
+        exponent++;
+        num /= i;
+      }
+ 
+      factors.push_back({i, exponent});
+    }
+  }
+ 
+  if (num != 1) {
+    factors.push_back({num, 1});
+  }
+ 
+  return factors;
+}
+ 
+int nodeCostForFactor(long long nodeCost, long long factor) {
+  int exp = 0;
+  while (nodeCost % factor == 0) {
+    exp++;
+    nodeCost /= factor;
+  }
+ 
+  return exp;
+}
+ 
+int solveWithPrime(long long factor, vector<int>& prvNode) {
+  vector<int> distances(N + 1, INF);
+  vector<int> costPerNode(N + 1, 0);
+  for (int i = 1; i <= N; i++) {
+    costPerNode[i] = nodeCostForFactor(valueInNode[i], factor);
+  }
+ 
+  distances[1] = costPerNode[1];
+  priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> distancesQueue;
+  for (int i = 1; i <= N; i++) {
+    distancesQueue.push({distances[i], i});
+  }
+ 
+  for (int i = 1; i <= N; i++) {
+    // outdated distance estimates for already reached nodes may exist in this priority queue
+    while (!distancesQueue.empty() && distancesQueue.top().first > distances[distancesQueue.top().second]) {
+      distancesQueue.pop();
+    }
+ 
+    assert(!distancesQueue.empty());
+    int node = distancesQueue.top().second;
+    assert(distances[node] == distancesQueue.top().first);
+    distancesQueue.pop();
+ 
+    for (auto& neighbour : G[node]) {
+      if (distances[neighbour] > distances[node] + costPerNode[neighbour]) {
+        distances[neighbour] = distances[node] + costPerNode[neighbour];
+        prvNode[neighbour] = node;
+        distancesQueue.push({distances[neighbour], neighbour});
+      }
+    }
+  }
+ 
+  return distances[N];
+}
+ 
+void recons(int currNode, vector<int>& prvNode) {
+  if (currNode == -1) {
+    return ;
+  }
+  recons(prvNode[currNode], prvNode);
+  printf("%d ", currNode);
+}
+ 
+void solve() {
+  int result = INF, lowestDominantFactor;
+  vector<int> prvNode(N + 1, -1);
+  factorsForK = factorizeNumber(K);
+  for (auto& factorAndExp : factorsForK) {
+    int bestPathForPrime = solveWithPrime(factorAndExp.factor, prvNode);
+    if (result > bestPathForPrime / factorAndExp.exp) {
+      result = bestPathForPrime / factorAndExp.exp;
+      lowestDominantFactor = factorAndExp.factor;
+    }
+  }
+ 
+  printf("%d\n", result);
+  // ensure path is populated
+  solveWithPrime(lowestDominantFactor, prvNode);
+  recons(N, prvNode);
+  printf("\n");
+}
+ 
+int main() {
+  freopen("pesaptecarari.in", "r", stdin);
+  freopen("pesaptecarari.out", "w", stdout);
+  read();
+  solve();
+ 
+  return 0;
+}

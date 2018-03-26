@@ -1,0 +1,146 @@
+/*
+ * Autor: George Marcus
+ * Solutia: cuplaj, O(N sqrtN)
+ */
+
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define MAXN 10050
+#define MAX 1000000000
+
+typedef pair<int, int> Point;
+
+const int dx[] = { 1, 0, -1 };
+const int dy[] = { 0, -1, 0 };
+
+int N;
+int X[MAXN], Y[MAXN], D[MAXN];
+set<Point> points;
+map<Point, int> pointIndex;
+Point indexPoint[4 * MAXN];
+vector<int> G[MAXN];
+int K;
+bool v[MAXN];
+int st[4 * MAXN], dr[4 * MAXN];
+
+
+void result(const char msg[], int p) {
+  fprintf(stderr, msg);
+  printf("%d", p);
+  exit(0);
+}
+
+int getIdx(int x, int y) {
+  Point key = { x, y };
+  if (pointIndex.count(key) == 0) {
+    indexPoint[K] = { x, y };
+    pointIndex[key] = K++;
+    assert(K < 4 * MAXN);
+  }
+  return pointIndex[key];
+}
+
+void initGraph() {
+  K = N;
+  for (int i = 0; i < N; i++) {
+    for (int dir = 0; dir < 3; dir++) {
+      int nx = X[i] + dx[dir] * D[i];
+      int ny = Y[i] + dy[dir] * D[i];
+      int dest = getIdx(nx, ny);
+      G[i].push_back(dest);
+    }
+  }
+}
+
+bool pairup(int node) {
+  if (v[node]) {
+    return false;
+  }
+  v[node] = true;
+
+  for (int x : G[node]) {
+    if (st[x] == -1) {
+      st[x] = node;
+      dr[node] = x;
+      return true;
+    }
+  }
+
+  for (int x : G[node]) {
+    if (pairup(st[x])) {
+      st[x] = node;
+      dr[node] = x;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool can() {
+  initGraph();
+
+  for (int i = 0; i < K; i++) {
+    st[i] = dr[i] = -1;
+  }
+
+  bool ok = true;
+  int match = 0;
+  while (ok) {
+    ok = false;
+
+    for (int i = 0; i < N; i++) {
+      v[i] = false;
+    }
+
+    for (int i = 0; i < N; i++) {
+      if (dr[i] == -1 && pairup(i)) {
+        ok = true;
+        match++;
+      }
+    }
+  }
+
+  return match == N;  
+}
+
+int main() {
+  assert(freopen("cutremur.out", "r", stdin));
+  cin.sync_with_stdio(false);
+
+  if (!(cin >> N)) {
+    result("Fisier de iesire corupt!", 0);
+  }
+  if (!(1 <= N && N <= 10000)) {
+    result("Numar de bile incorect", 0);
+  }
+
+  for (int i = 0; i < N; i++) {
+    if (!(cin >> X[i] >> Y[i] >> D[i])) {
+      result("Fisier de iesire corupt!", 0);
+    }
+    if (!(1 <= X[i] && X[i] <= MAX)) {
+      result("Numerele nu respecta restrictiile", 0);
+    }
+    if (!(1 <= Y[i] && Y[i] <= MAX)) {
+      result("Numerele nu respecta restrictiile", 0);
+    }
+    if (!(1 <= D[i] && D[i] <= MAX)) {
+      result("Numerele nu respecta restrictiile", 0);
+    }
+    if (points.count({ X[i], Y[i] }) > 0) {
+      result("Coordonatele bilelor nu sunt distincte", 0);
+    }
+    points.insert({ X[i], Y[i] });
+  }
+
+  if (can()) {
+    result("Exista solutie pentru acest test", 0);
+  } else {
+    result("OK", 100);
+  }
+
+  return 0;
+}

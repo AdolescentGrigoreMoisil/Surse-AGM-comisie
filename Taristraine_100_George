@@ -1,0 +1,165 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Correct solution: O(N * logN + M * (logN)^2)
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int MaxN=100010;
+struct arbint
+{
+    long long sum,lazy;
+};
+vector<arbint> arb[MaxN];
+vector<int> g[MaxN];
+int tata[MaxN],cost[MaxN],niv[MaxN],size[MaxN];
+int lant[MaxN],poz_lant[MaxN],lant_size[MaxN],lant_tata[MaxN],nrl;
+long long din[MaxN];
+ 
+void dfs1(int nod,int lev)
+{
+    niv[nod]=lev;
+    size[nod]=1;
+    for(auto fiu : g[nod])
+    {
+        dfs1(fiu,lev+1);
+        size[nod]+=size[fiu];
+    }
+}
+ 
+void dfs2(int nod,int l)
+{
+    lant[nod]=l;
+    poz_lant[nod]=++lant_size[l];
+    int heavy=0;
+    for(auto fiu : g[nod])
+        if(size[fiu]>size[heavy]) heavy=fiu;
+    if(!heavy) return;
+    dfs2(heavy,l);
+    for(auto fiu : g[nod])
+        if(fiu!=heavy)
+        {
+            nrl++;
+            lant_tata[nrl]=nod;
+            dfs2(fiu,nrl);
+        }
+}
+ 
+void update(int nod,int st,int dr,vector<arbint> &arb)
+{
+    arb[nod].sum+=arb[nod].lazy*(dr-st+1);
+    if(st<dr)
+    {
+        arb[nod*2].lazy+=arb[nod].lazy;
+        arb[nod*2+1].lazy+=arb[nod].lazy;
+    }
+    arb[nod].lazy=0;
+}
+ 
+void arbint_update(int nod,int st,int dr,int left,int right,long long val,vector<arbint> &arb)
+{
+    if(left<=st && dr<=right)
+    {
+        arb[nod].lazy+=val;
+        update(nod,st,dr,arb);
+    }
+    else
+    {
+        update(nod,st,dr,arb);
+        int mid=(st+dr)/2;
+        if(left<=mid) arbint_update(nod*2,st,mid,left,right,val,arb);
+        else update(nod*2,st,mid,arb);
+        if(mid<right) arbint_update(nod*2+1,mid+1,dr,left,right,val,arb);
+        else update(nod*2+1,mid+1,dr,arb);
+        arb[nod].sum=arb[nod*2].sum+arb[nod*2+1].sum;
+    }
+}
+ 
+long long arbint_query(int nod,int st,int dr,int left,int right,vector<arbint> &arb)
+{
+    update(nod,st,dr,arb);
+    if(left<=st && dr<=right) return arb[nod].sum;
+    else
+    {
+        int mid=(st+dr)/2;
+        long long ret=0;
+        if(left<=mid) ret+=arbint_query(nod*2,st,mid,left,right,arb);
+        if(mid<right) ret+=arbint_query(nod*2+1,mid+1,dr,left,right,arb);
+        return ret;
+    }
+}
+ 
+void dfs3(int nod)
+{
+    for(auto fiu : g[nod])
+        dfs3(fiu);
+    din[nod]=cost[nod];
+    for(auto fiu : g[nod])
+        din[nod]+=cost[fiu]+din[fiu];
+}
+ 
+void upd(int x,int y,int l,long long val)
+{
+    arbint_update(1,1,lant_size[l],x,y,val,arb[l]);
+}
+ 
+long long qry(int x,int y,int l)
+{
+    return arbint_query(1,1,lant_size[l],x,y,arb[l]);
+}
+ 
+int main()
+{
+    freopen("taristraine.in", "r", stdin);
+    freopen("taristraine.out", "w", stdout);
+    int n,m;
+    scanf("%d%d",&n,&m);
+    assert(1<=n && n<=100000);
+    assert(1<=m && m<=100000);
+    for(int i=2;i<=n;i++)
+    {
+        int x,c;
+        scanf("%d%d",&x,&c);
+        assert(1<=x && x<=n);
+        assert(1<=c && c<=1000000);
+        tata[i]=x;
+        cost[i]=c;
+        g[x].push_back(i);
+    }
+    dfs1(1,0);
+    nrl++;
+    dfs2(1,nrl);
+    for(int i=1;i<=nrl;i++) arb[i].resize(4*lant_size[i]);
+    dfs3(1);
+    for(int i=2;i<=n;i++)
+        upd(poz_lant[i],poz_lant[i],lant[i],din[i]);
+    for(int i=1;i<=m;i++)
+    {
+        int tip,x,y;
+        scanf("%d%d%d",&tip,&x,&y);
+        assert(1<=tip && tip<=2);
+        assert(1<=x && x<=n);
+        if(tip==1)
+        {
+            assert(1<=y && y<=1000000);
+            int s=y-cost[x];
+            cost[x]=y;
+            upd(poz_lant[x],poz_lant[x],lant[x],s);
+            for(int nod=tata[x];nod;nod=lant_tata[lant[nod]])
+                upd(1,poz_lant[nod],lant[nod],2*s);
+        }
+        else
+        {
+            assert(1<=y && y<=n);
+            long long sol=0;
+            for(;lant[x]!=lant[y];x=lant_tata[lant[x]])
+                sol+=qry(1,poz_lant[x],lant[x]);
+            if(poz_lant[y]<poz_lant[x]) sol+=qry(poz_lant[y]+1,poz_lant[x],lant[x]);
+            printf("%lld 1\n",sol);
+        }
+    }
+    return 0;
+}

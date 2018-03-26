@@ -1,0 +1,196 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const double eps=1e-8;
+struct punct
+{
+    int x,y;
+    bool operator <(const punct &aux) const
+    {
+        if(x==aux.x) return y<aux.y;
+        return x<aux.x;
+    }
+};
+ 
+long long det(punct a,punct b,punct c)
+{
+    return 1LL*(a.x-b.x)*(a.y-c.y)-1LL*(a.x-c.x)*(a.y-b.y);
+}
+ 
+int samesign(long long a,long long b)
+{
+    if(a<0 && b<0) return 1;
+    if(a>0 && b>0) return 1;
+    return 0;
+}
+ 
+punct inters(punct p1,punct p2,punct p3,punct p4)
+{
+    double a1,b1,a2,b2;
+    double x,y;
+    if(p1.x!=p2.x)
+    {
+        a1=1.0*(p2.y-p1.y)/(p2.x-p1.x);
+        b1=p1.y-a1*p1.x;
+    }
+    if(p3.x!=p4.x)
+    {
+        a2=1.0*(p4.y-p3.y)/(p4.x-p3.x);
+        b2=p3.y-a2*p3.x;
+    }
+    if(p1.x==p2.x)
+    {
+        x=p1.x;
+        y=a2*x+b2;
+    }
+    else if(p3.x==p4.x)
+    {
+        x=p3.x;
+        y=a1*x+b1;
+    }
+    else
+    {
+        x=(b2-b1)/(a1-a2);
+        y=a1*x+b1;
+    }
+    int xx,yy;
+    if(x<0) xx=x-eps;
+    else xx=x+eps;
+    if(y<0) yy=y-eps;
+    else yy=y+eps;
+    assert(abs(x-xx)<eps);
+    assert(abs(y-yy)<eps);
+    return {xx,yy};
+}
+ 
+void inters_and_add(punct a1,punct a2,punct b1,punct b2,vector<punct> &ret)
+{
+    if(det(a1,a2,b1)==0 && det(a1,a2,b2)==0) return;
+    if(samesign(det(a1,b1,b2),det(a2,b1,b2))) return;
+    if(samesign(det(b1,a1,a2),det(b2,a1,a2))) return;
+    ret.push_back(inters(a1,a2,b1,b2));
+}
+ 
+int insidepol(punct p,vector<punct> &pol)
+{
+    for(int i=0;i<pol.size();i++)
+        if(det(p,pol[i],pol[(i+1)%pol.size()])<0) return 0;
+    return 1;
+}
+ 
+vector<punct> convex_hull(vector<punct> v)
+{
+    vector<punct> ret;
+    for(int i=1;i<v.size();i++)
+        if(v[i]<v[0]) swap(v[i],v[0]);
+    auto cmp=[&v](punct a,punct b)
+    {
+        long long s=det(v[0],a,b);
+        if(s==0) return a<b;
+        return s>0;
+    };
+    sort(v.begin()+1,v.end(),cmp);
+    ret.push_back(v[0]);
+    for(int i=1;i<v.size();i++)
+    {
+        for(;ret.size()>=2 && det(ret[ret.size()-2],ret[ret.size()-1],v[i])<=0;ret.pop_back());
+        ret.push_back(v[i]);
+    }
+    return ret;
+}
+ 
+int gcd(int a,int b)
+{
+    int r=a%b;
+    while(r)
+    {
+        a=b;b=r;
+        r=a%b;
+    }
+    return b;
+}
+ 
+int get_nrpctlat(punct a,punct b)
+{
+    int x=abs(a.x-b.x);
+    int y=abs(a.y-b.y);
+    if(x==0) return y;
+    if(y==0) return x;
+    return gcd(x,y);
+}
+ 
+long long solve(vector<punct> &pol1,vector<punct> &pol2)
+{
+    vector<punct> polint;
+    for(int i=0;i<pol1.size();i++)
+        for(int j=0;j<pol2.size();j++)
+            inters_and_add(pol1[i],pol1[(i+1)%pol1.size()],pol2[j],pol2[(j+1)%pol2.size()],polint);
+    for(int i=0;i<pol1.size();i++)
+        if(insidepol(pol1[i],pol2)) polint.push_back(pol1[i]);
+    for(int i=0;i<pol2.size();i++)
+        if(insidepol(pol2[i],pol1)) polint.push_back(pol2[i]);
+    if(polint.size()==0) return 0;
+    if(polint.size()==1) return 1;
+    if(polint.size()==2) return (get_nrpctlat(polint[0],polint[1])+1);
+    polint=convex_hull(polint);
+    long long aria=0,bound=0;
+    for(int i=0;i<polint.size();i++)
+        aria+=det({0,0},polint[i],polint[(i+1)%polint.size()]);
+    for(int i=0;i<polint.size();i++)
+        bound+=get_nrpctlat(polint[i],polint[(i+1)%polint.size()]);
+    return (bound+(aria+2-bound)/2);
+}
+ 
+int isconvex(vector<punct> &pol)
+{
+    for(int i=0;i<pol.size();i++)
+        if(det(pol[i],pol[(i+1)%pol.size()],pol[(i+2)%pol.size()])<0)
+        {
+            int x=0;
+            x++;
+            return 0;
+        }
+    return 1;
+}
+ 
+int main()
+{
+    freopen("metaxa.in", "r", stdin);
+    freopen("metaxa.out", "w", stdout);
+    int t,n;
+    scanf("%d",&t);
+    assert(1<=t && t<=23);
+    for(;t;t--)
+    {
+        scanf("%d",&n);
+        assert(1<=n && n<=23);
+        vector<vector<punct> > poligoane;
+        for(int i=0;i<n;i++)
+        {
+            int nr,x,y;
+            scanf("%d",&nr);
+            assert(3<=nr && nr<=23);
+            poligoane.push_back(vector<punct>());
+            for(int j=1;j<=nr;j++)
+            {
+                scanf("%d%d",&x,&y);
+                assert(-1000000<=x && x<=1000000);
+                assert(-1000000<=y && y<=1000000);
+                poligoane.back().push_back({x,y});
+            }
+            assert(isconvex(poligoane.back()));
+        }
+        long long sol=0;
+        for(int i=0;i<n;i++)
+            for(int j=i+1;j<n;j++)
+                sol=max(sol,solve(poligoane[i],poligoane[j]));
+        printf("%lld\n",sol);
+    }
+    return 0;
+}

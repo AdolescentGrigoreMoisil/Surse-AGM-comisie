@@ -1,0 +1,89 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+int v[300010],v1[300010],n,rez;
+ 
+vector<int> get_prime_fact(int x)
+{
+    vector<int> ret;
+    for(int i=2;i*i<=x;i++)
+        if(x%i==0)
+        {
+            ret.push_back(i);
+            for(;x%i==0;x/=i);
+        }
+    if(x>1) ret.push_back(x);
+    return ret;
+}
+ 
+int get_exp(int x,int a)
+{
+    int cnt=0;
+    for(;a%x==0;a/=x) cnt++;
+    return cnt;
+}
+ 
+int solve(int x)
+{
+    int lo=0,hi=get_exp(x,v[1]);
+    int s=hi;
+    for(int i=2;i<=n;i++)
+    {
+        if(i&1)
+        {
+            s+=get_exp(x,v[i]);
+            hi=min(hi,s);
+ 
+        }
+        else
+        {
+            s-=get_exp(x,v[i]);
+            lo=max(lo,s);
+        }
+    }
+    if(lo<=hi)
+    {
+        for(int i=1;i<=lo;i++) rez*=x;
+        return hi-lo+1;
+    }
+    else return 0;
+}
+ 
+int main()
+{
+    freopen("produse2.in", "r", stdin);
+    freopen("produse2.out", "w", stdout);
+    int t;
+    for(scanf("%d",&t);t;t--)
+    {
+        scanf("%d",&n);n--;
+        for(int i=1;i<=n;i++) scanf("%d",&v[i]);
+        vector<int> primes=get_prime_fact(v[1]);
+        int sol=1;
+        rez=1;
+        for(auto x : primes)
+            sol*=solve(x);
+        if(sol)
+        {
+            v1[0]=rez;
+            for(int i=1;i<=n;i++)
+            {
+                if(v[i]%v1[i-1]) {sol=0;break;}
+                v1[i]=v[i]/v1[i-1];
+            }
+        }
+        printf("%d\n",sol);
+        if(sol)
+        {
+            for(int i=0;i<=n;i++) printf("%d ",v1[i]);
+            printf("\n");
+        }
+    }
+    return 0;
+}

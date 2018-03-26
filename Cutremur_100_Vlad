@@ -1,0 +1,35 @@
+#include <bits/stdc++.h>
+   
+using namespace std;
+   
+int main(int argc, char const *argv[])
+{
+    ofstream fout ("cutremur.out");
+    fout << "25\n";
+    fout << "2 6 1\n";
+    fout << "3 6 2\n";
+    fout << "4 6 1\n";
+    fout << "5 6 2\n";
+    fout << "6 6 1\n";
+    fout << "7 6 2\n";
+    fout << "8 6 1\n";
+    fout << "9 6 2\n";
+    fout << "10 6 1\n";
+    fout << "3 5 1\n";
+    fout << "4 5 2\n";
+    fout << "5 5 1\n";
+    fout << "6 5 2\n";
+    fout << "7 5 1\n";
+    fout << "8 5 2\n";
+    fout << "9 5 1\n";
+    fout << "4 4 1\n";
+    fout << "5 4 2\n";
+    fout << "6 4 1\n";
+    fout << "7 4 2\n";
+    fout << "8 4 1\n";
+    fout << "5 3 1\n";
+    fout << "6 3 2\n";
+    fout << "7 3 1\n";
+    fout << "6 2 1\n";
+    return 0;
+}

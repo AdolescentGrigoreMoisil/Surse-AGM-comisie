@@ -1,0 +1,134 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+class cmp {
+public:
+    bool operator () (const pair <int, int> &firstNode, const pair <int, int> &secondNode) const {
+        return firstNode.second > secondNode.second;
+    }
+};
+ 
+const int NMax = static_cast<const int>(1e5);
+int visited[NMax + 5];
+priority_queue <pair <int, int>, vector <pair <int, int>>, cmp> Q;
+bitset<(int)1e6 + 1> frequence;
+vector <pair <long long, int>> K;
+vector <long long> valuesOfNodes;
+vector <int> result;
+vector <int> distances;
+vector <int> cost;
+vector <int> graph[NMax + 5];
+vector <int> reversedGraph[NMax + 5];
+ 
+void populateK (long long value) {
+    for (int i = 2; 1LL * i * i <= value; ++i) {
+        int exponent = 0;
+        while (value % i == 0) {
+            value /= i;
+            exponent += 1;
+        }
+        if (exponent) {
+            K.push_back({i, exponent});
+        }
+    }
+    if (value > 1) {
+        K.push_back({value, 1});
+    }
+} //sqrt(value)
+ 
+int getCost (long long primeNumber, long long value) {
+    if (value == 0) {
+        return 10000;
+    }
+    int exponent = 0;
+    while (value % primeNumber == 0) {
+        value /= primeNumber;
+        exponent += 1;
+    }
+    return exponent;
+} //log (value)
+ 
+void populateCost (long long primeNumber) {
+    for (int i = 0; i < valuesOfNodes.size(); ++i) {
+        cost[i] = getCost(primeNumber, valuesOfNodes[i]);
+    }
+} //n * log(valMax)
+ 
+void solveOnePrimeFactor (int &finalCost, long long prime, int exponent) {
+    populateCost(prime);
+    for (int i = 0; i < valuesOfNodes.size(); ++i) {
+        distances[i] = (1 << 29);
+    }
+    distances[0] = cost[0];
+    Q.push({0, distances[0]});
+    while (Q.size()) {
+        int node = Q.top().first;
+        int dist = Q.top().second;
+        Q.pop();
+        if (dist != distances[node]) {
+            continue;
+        }
+        for (auto x : graph[node]) {
+            if (dist + cost[x] < distances[x]) {
+                distances[x] = dist + cost[x];
+                Q.push({x, distances[x]});
+            }
+        }
+    }
+    if (distances[valuesOfNodes.size() - 1] / exponent >= finalCost) {
+        return;
+    }
+ 
+    finalCost = distances[valuesOfNodes.size() - 1] / exponent;
+    int currentNode = valuesOfNodes.size() - 1;
+    result.clear();
+    result.push_back(currentNode);
+    for (int i = 0; i < valuesOfNodes.size(); ++i) {
+        visited[i] = 0;
+    }
+    visited[currentNode] = 1;
+    while (currentNode) {
+        for (auto x : reversedGraph[currentNode]) {
+            if (distances[x] + cost[currentNode] == distances[currentNode] and visited[x] == 0) {
+                visited[x] += 1;
+                currentNode = x;
+                break;
+            }
+        }
+        result.push_back(currentNode);
+    }
+}
+ 
+int main() {
+    ifstream fin ("pesaptecarari.in");
+    ofstream fout ("pesaptecarari.out");
+    int n, m;
+    int finalCost = (1 << 25);
+    long long k;
+    fin >> n >> m >> k;
+    populateK(k);
+    valuesOfNodes.resize(static_cast<unsigned int>(n));
+    cost.resize(static_cast<unsigned int>(n));
+    distances.resize(static_cast<unsigned int>(n));
+    for (int i = 0; i < n; ++i) {
+        fin >> valuesOfNodes[i];
+    }
+    for (int i = 1; i <= m; ++i) {
+        int node1, node2;
+        fin >> node1 >> node2;
+        node1 -= 1;
+        node2 -= 1;
+        graph[node1].push_back(node2);
+        reversedGraph[node2].push_back(node1);
+    }
+    for (auto prime : K) {
+        solveOnePrimeFactor(finalCost, prime.first, prime.second);
+    }
+    fout << finalCost << '\n';
+    reverse (result.begin(), result.end());
+    for (auto x : result) {
+        fout << x + 1 << ' ';
+    }
+    return 0;
+}

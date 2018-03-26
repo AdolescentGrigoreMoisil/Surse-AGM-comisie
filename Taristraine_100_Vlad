@@ -1,0 +1,176 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int MAXN = static_cast<const int>(1e5);
+const int MAXM = static_cast<const int>(1e5);
+const int MAXCost = static_cast<const int>(1e6);
+ 
+class SegmentTree {
+public:
+    void start (int maximumPosition) {
+        maxPos = maximumPosition;
+        lazy.resize(static_cast<unsigned int>(maximumPosition << 2));
+        sum.resize(static_cast<unsigned int>(maximumPosition << 2));
+    }
+ 
+    void updateTree (int left, int right, int value) {
+        update(1, 1, maxPos, left, right, value);
+    }
+ 
+    long long queryTree (int left, int right) {
+        return query(1, 1, maxPos, left, right);
+    }
+private:
+    int maxPos;
+    vector <long long> lazy;
+    vector <long long> sum;
+ 
+    void pushLazy (int node, int left, int right) {
+        sum[node] += lazy[node] * (right - left + 1);
+        if (left == right) {
+            lazy[node] = 0;
+            return ;
+        }
+        lazy[node << 1] += lazy[node];
+        lazy[node << 1 | 1] += lazy[node];
+        lazy[node] = 0;
+    }
+ 
+    void update (int node, int left, int right, int a, int b, int value) {
+        if (a <= left and right <= b) {
+            lazy[node] += value;
+            return ;
+        }
+        sum[node] += 1LL * value * (min(b, right) - max(a, left) + 1);
+        int middle = left + right >> 1;
+        if (a <= middle) {
+            update(node << 1, left, middle, a, b, value);
+        }
+        if (middle < b) {
+            update(node << 1 | 1, middle + 1, right, a, b, value);
+        }
+    }
+ 
+    long long query (int node, int left, int right, int a, int b) {
+        pushLazy(node, left, right);
+        if (a <= left and right <= b) {
+            return sum[node];
+        }
+        int middle = left + right >> 1;
+        long long leftSum = 0LL;
+        long long rightSum = 0LL;
+        if (a <= middle) {
+            leftSum = query(node << 1, left, middle, a, b);
+        }
+        if (middle < b) {
+            rightSum = query(node << 1 | 1, middle + 1, right, a, b);
+        }
+        return leftSum + rightSum;
+    }
+};
+ 
+ 
+vector <SegmentTree> chains;
+ 
+vector <int> graph[MAXN + 5];
+int cost[MAXN + 5];
+int father[MAXN + 5];
+int where[MAXN + 5];
+int boss[MAXN + 5];
+int sizeOf[MAXN + 5];
+int lengthOfChain[MAXN + 5];
+int position[MAXN + 5];
+ 
+void buildHPD (int node) {
+    sizeOf[node] = 1;
+    int best = 0;
+    for (auto x : graph[node]) {
+        buildHPD(x);
+        sizeOf[node] += sizeOf[x];
+        if (sizeOf[best] < sizeOf[x]) {
+            best = x;
+        }
+    }
+    if (best == 0) {
+        SegmentTree newTree;
+        where[node] = chains.size();
+        lengthOfChain[where[node]] = 1;
+        position[node] = 1;
+        chains.push_back(newTree);
+        return ;
+    }
+    for (auto x : graph[node]) {
+        if (x == best) {
+            continue;
+        }
+        boss[where[x]] = x;
+    }
+    position[node] = position[best] + 1;
+    where[node] = where[best];
+    lengthOfChain[where[node]] += 1;
+}
+ 
+void update (int node, int newCost) {
+    int updateWith = newCost - cost[node];
+    cost[node] = newCost;
+    chains[where[node]].updateTree(position[node], position[node], -updateWith);
+    while (node) {
+        int chain = where[node];
+        chains[chain].updateTree(position[node], lengthOfChain[chain], updateWith << 1);
+        node = father[boss[chain]];
+    }
+}
+ 
+long long query (int node, int ancestor) {
+    long long result = 0LL;
+    while (where[node] != where[ancestor]) {
+        int chain = where[node];
+        result += chains[chain].queryTree(position[node], lengthOfChain[chain]);
+        node = father[boss[chain]];
+    }
+    if (node == ancestor) {
+        return result;
+    }
+    return result + chains[where[node]].queryTree(position[node], position[ancestor] - 1);
+}
+ 
+ 
+int main() {
+    ifstream fin ("taristraine.in");
+    ofstream fout ("taristraine.out");
+    int numberOfNodes, numberOfQueries, root = 1;
+    fin >> numberOfNodes >> numberOfQueries;
+    for (int i = 2; i <= numberOfNodes; ++i) {
+        int currentFather, currentCost;
+        fin >> currentFather >> currentCost;
+        cost[i] = currentCost;
+        father[i] = currentFather;
+        graph[currentFather].push_back(i);
+    }
+    buildHPD(root);
+    boss[where[root]] = root;
+    for (int i = 0; i < chains.size(); ++i) {
+        chains[i].start(lengthOfChain[i]);
+    }
+    for (int i = 2; i <= numberOfNodes; ++i) {
+        int newCost = cost[i];
+        cost[i] = 0;
+        update(i, newCost);
+    }
+    for (int i = 0; i < numberOfQueries; ++i) {
+        int type;
+        fin >> type;
+        if (type == 1) {
+            int node, newCost;
+            fin >> node >> newCost;
+            update(node, newCost);
+        }
+        if (type == 2) {
+            int node, ancestor;
+            fin >> node >> ancestor;
+            fout << query(node, ancestor) << ' ' << "1" << '\n';
+        }
+    }
+    return 0;
+}

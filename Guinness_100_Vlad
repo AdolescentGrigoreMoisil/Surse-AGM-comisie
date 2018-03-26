@@ -1,0 +1,62 @@
+/*
+* Vlad-Andrei Munteanu
+* University: University of Manchester
+* Problem: Guinness
+* Author: Teodor Ionescu
+* Contest: "Adolescent Grigore Moisil"
+* Expected: Accepted
+*/
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+//declarations - begin
+ifstream fin ("guinness.in");
+ofstream fout ("guinness.out");
+const int MAXNumberOfDigits = 1e5;
+const int MAXBase = 1e9;
+const int MAXModulo = 1e9;
+//declarations - end
+ 
+void read (string& currentExponent, long long& currentBase, long long& currentModulo) {
+  assert(fin >> currentBase >> currentExponent >> currentModulo);
+  assert(0 <= currentBase and currentBase <= MAXBase);
+  assert(1 <= currentModulo and currentModulo <= MAXModulo);
+} //read
+ 
+long long power (long long base, string& exponent, long long modulo) {
+  long long result = 1LL;
+  long long baseAtPowersOfTen = base;
+  int numberOfDigits = exponent.size();
+  assert(0 < numberOfDigits and numberOfDigits <= MAXNumberOfDigits);
+  for (int currentIndex = numberOfDigits - 1; currentIndex >= 0; --currentIndex) {
+    int currentDigit = exponent[currentIndex] - '0';
+    assert(0 <= currentDigit and currentDigit <= 9);
+    while (currentDigit--) {
+      result = (result * baseAtPowersOfTen) % modulo;
+    }
+    long long nextBaseAtPowersOfTen = 1;
+    for (int howmany = 1; howmany <= 10; ++howmany) {
+      nextBaseAtPowersOfTen = (nextBaseAtPowersOfTen * baseAtPowersOfTen) % modulo;
+    }
+    baseAtPowersOfTen = nextBaseAtPowersOfTen;
+  }
+  return result;
+} //power
+ 
+void solveOneTest () {
+  long long base, modulo;
+  string exponent;
+  read (exponent, base, modulo);
+  fout << power(base, exponent, modulo) << '\n';
+} //solveOneTest
+ 
+int main () {
+  int numberOfTests;
+  assert(fin >> numberOfTests);
+  assert(numberOfTests <= 10);
+  while (numberOfTests--) {
+    solveOneTest();
+  }
+} //main

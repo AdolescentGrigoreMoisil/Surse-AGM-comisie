@@ -1,0 +1,158 @@
+/*
+ * Vlad-Andrei Munteanu
+ * University: University of Manchester
+ * Problem: Valea Regilor
+ * Author: Vlad-Andrei Munteanu
+ * Contest: "Adolescent Grigore Moisil"
+ * Expected: Accepted
+ */
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int MAXN = static_cast<const int>(1e5);
+const int MAXQ = static_cast<const int>(1e6);
+const int MAXLog = 21;
+int currentPosition;
+int eulerTraversal[4 * MAXN + 10];
+int leftNodes[MAXN + 5];
+int rightNodes[MAXN + 5];
+int level[MAXN + 5];
+int values[MAXN + 5];
+int dpLeft[MAXN + 5];
+int dpRight[MAXN + 5];
+int startOfNodes[MAXN + 5];
+int finishOfNodes[MAXN + 5];
+int rmq[MAXLog][4 * MAXN + 5];
+int logarithm[4 * MAXN + 10];
+ 
+void buildTree (int values[], int leftNodes[], int rightNodes[], int numberOfElements, int& root) {
+    stack <int> s;
+    for (int i = 0; i <= numberOfElements + 1; ++i) {
+        while (s.size() >= 2) {
+            int currentTop = s.top();
+            s.pop();
+            if (values[s.top()] < values[currentTop] and values[currentTop] > values[i]) {
+                leftNodes[i] = currentTop;
+                continue;
+            }
+            s.push(currentTop);
+            break;
+        }
+        s.push(i);
+    }
+    while (!s.empty()) {
+        s.pop();
+    }
+    for (int i = numberOfElements + 1; i >= 0; --i) {
+        if (values[i] == 1) {
+            root = i;
+        }
+        while (s.size() >= 2) {
+            int currentTop = s.top();
+            s.pop();
+            if (values[s.top()] < values[currentTop] and values[currentTop] > values[i]) {
+                rightNodes[i] = currentTop;
+                continue;
+            }
+            s.push(currentTop);
+            break;
+        }
+        s.push(i);
+    }
+}
+ 
+void buildDP (int node) {
+    if (node == 0) {
+        return ;
+    }
+    dpLeft[leftNodes[node]] = dpLeft[node] + 1;
+    dpRight[leftNodes[node]] = dpRight[node];
+    dpLeft[rightNodes[node]] = dpLeft[node];
+    dpRight[rightNodes[node]] = dpRight[node] + 1;
+    buildDP(leftNodes[node]);
+    buildDP(rightNodes[node]);
+}
+ 
+void buildLevelsAndEulerTraversal (int node) {
+    if (node == 0) {
+        return;
+    }
+    level[leftNodes[node]] = level[rightNodes[node]] = level[node] + 1;
+    currentPosition += 1;
+    eulerTraversal[currentPosition] = node;
+    startOfNodes[node] = currentPosition;
+    buildLevelsAndEulerTraversal(leftNodes[node]);
+    currentPosition += 1;
+    eulerTraversal[currentPosition] = node;
+    buildLevelsAndEulerTraversal(rightNodes[node]);
+    currentPosition += 1;
+    eulerTraversal[currentPosition] = node;
+    finishOfNodes[node] = currentPosition;
+}
+ 
+void buildRMQ () {
+    logarithm[1] = 0;
+    for (int i = 2; i <= currentPosition; ++i) {
+        logarithm[i] = logarithm[i >> 1] + 1;
+    }
+    for (int i = 1; i <= currentPosition; ++i) {
+        rmq[0][i] = i;
+        if (i < currentPosition and level[eulerTraversal[i]] > level[eulerTraversal[i + 1]]) {
+            rmq[0][i] = i + 1;
+        }
+    }
+    for (int i = 1; i < MAXLog; ++i) {
+        for (int j = 1; j + (1 << i) <= currentPosition; ++j) {
+            if (level[eulerTraversal[rmq[i - 1][j]]] < level[eulerTraversal[rmq[i - 1][j + (1 << (i - 1))]]]) {
+                rmq[i][j] = rmq[i - 1][j];
+            }
+            else {
+                rmq[i][j] = rmq[i - 1][j + (1 << (i - 1))];
+            }
+        }
+    }
+}
+ 
+int lca (int firstNode, int secondNode) {
+    if (firstNode == secondNode) {
+        return firstNode;
+    }
+    int leftPosition = startOfNodes[firstNode];
+    int rightPosition = startOfNodes[secondNode];
+    if (leftPosition > rightPosition) {
+        swap(leftPosition, rightPosition);
+    }
+    int difference = rightPosition - leftPosition;
+    int logDiff = logarithm[difference];
+    if (level[eulerTraversal[rmq[logDiff][leftPosition]]] < level[eulerTraversal[rmq[logDiff][rightPosition - (1 << logDiff)]]]) {
+        return eulerTraversal[rmq[logDiff][leftPosition]];
+    }
+    return eulerTraversal[rmq[logDiff][rightPosition - (1 << logDiff)]];
+}
+ 
+int main() {
+    ifstream fin ("valearegilor.in");
+    ofstream fout ("valearegilor.out");
+    int numberOfElements, numberOfQueries, currentRoot;
+    fin >> numberOfElements >> numberOfQueries;
+    for (int i = 1; i <= numberOfElements; ++i) {
+        fin >> values[i];
+    }
+    values[0] = values[numberOfElements + 1] = 0;
+    buildTree(values, leftNodes, rightNodes, numberOfElements, currentRoot);
+    dpRight[currentRoot] = dpLeft[currentRoot] = 1;
+    buildDP(currentRoot);
+    level[currentRoot] = 1;
+    buildLevelsAndEulerTraversal(currentRoot);
+    buildRMQ();
+    for (int i = 1; i <= numberOfQueries; ++i) {
+        int left, right, currentLCA;
+        fin >> left >> right;
+        assert (left <= right);
+        currentLCA = lca (left, right);
+        assert (1 <= currentLCA and currentLCA <= numberOfElements);
+        fout << dpLeft[left] + dpRight[right] - dpLeft[currentLCA] - dpRight[currentLCA] + 1 << '\n';
+    }
+    return 0;
+}

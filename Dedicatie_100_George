@@ -1,0 +1,117 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Correct solution: O(N * (logN)^2)
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int MaxN=100010,mod=100003;
+struct suffix
+{
+    int s1,s2,poz;
+    bool operator <(const suffix &aux) const
+    {
+        if(s1==aux.s1) return s2<aux.s2;
+        return s1<aux.s1;
+    }
+    bool operator ==(const suffix &aux) const
+    {
+        return (s1==aux.s1 && s2==aux.s2);
+    }
+}v[MaxN];
+int p[20][MaxN];
+ 
+vector<pair<int,int> > g[MaxN];
+pair<long long,int> val[MaxN];
+pair<int,int> edges[MaxN];
+vector<pair<int,int> > elem[2];
+int size[MaxN],cost[MaxN],niv[MaxN],stram[MaxN][20],tip[MaxN],n,root1,root2;
+ 
+void dfs1(int nod,int tata)
+{
+    size[nod]=1;
+    for(auto fiu : g[nod])
+        if(fiu.first!=tata)
+        {
+            dfs1(fiu.first,nod);
+            size[nod]+=size[fiu.first];
+            val[fiu.second].first=-(1LL*size[fiu.first]*(n-size[fiu.first]));
+        }
+}
+ 
+void dfs2(int nod,int tata,int lev,int val,int t)
+{
+    tip[nod]=t;
+    niv[nod]=lev;
+    stram[nod][0]=tata;
+    for(int i=1;(1<<i)<=lev;i++)
+        stram[nod][i]=stram[stram[nod][i-1]][i-1];
+    v[nod].poz=nod;
+    p[0][nod]=val;
+    for(auto fiu : g[nod])
+        if(fiu.first!=tata) dfs2(fiu.first,nod,lev+1,cost[fiu.second],t);
+}
+ 
+void read_input()
+{
+    int x,y;
+    scanf("%d",&n);
+    assert(1<=n && n<=100000);
+    for(int i=1;i<n;i++)
+    {
+        scanf("%d%d",&x,&y);
+        assert(1<=x && x<=n);
+        assert(1<=y && y<=n);
+        edges[i]={x,y};
+        g[x].push_back({y,i});
+        g[y].push_back({x,i});
+        val[i].second=i;
+    }
+    dfs1(1,0);
+    sort(val+1,val+n);
+    for(int i=1;i<n;i++)
+    {
+        scanf("%d",&x);
+        assert(1<=x && x<mod);
+        cost[val[i].second]=(1LL*(i-1)*x)%mod;
+    }
+    root1=edges[val[1].second].first;
+    root2=edges[val[1].second].second;
+}
+ 
+int main()
+{
+    freopen("dedicatie.in", "r", stdin);
+    freopen("dedicatie.out", "w", stdout);
+    read_input();
+    dfs2(root1,root2,0,0,0);
+    dfs2(root2,root1,0,0,1);
+    int maxniv=0,logmaxniv=0;
+    for(int i=1;i<=n;i++) maxniv=max(maxniv,niv[i]);
+    for(;(1<<logmaxniv)<=maxniv;logmaxniv++);
+    for(int i=1;i<=logmaxniv;i++)
+    {
+        for(int j=1;j<=n;j++)
+        {
+            v[j].s1=p[i-1][v[j].poz];
+            if((1<<(i-1))<=niv[v[j].poz]) v[j].s2=p[i-1][stram[v[j].poz][i-1]];
+            else v[j].s2=-1;
+        }
+        sort(v+1,v+1+n);
+        for(int j=2;j<=n;j++)
+            if(v[j]==v[j-1]) p[i][v[j].poz]=p[i][v[j-1].poz];
+            else p[i][v[j].poz]=j;
+    }
+    for(int i=1;i<=n;i++)
+        elem[tip[v[i].poz]].push_back({p[logmaxniv][v[i].poz],v[i].poz});
+    sort(elem[0].begin(),elem[0].end());
+    sort(elem[1].begin(),elem[1].end());
+    int poz0=0,poz1=0;
+    for(int i=1;i<=n;i++)
+        if(tip[i]==0) printf("%d\n",elem[1][poz1++].second);
+        else printf("%d\n",elem[0][poz0++].second);
+    return 0;
+}

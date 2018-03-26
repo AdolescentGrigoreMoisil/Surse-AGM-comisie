@@ -1,0 +1,246 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+const int inf=1e9;
+ 
+int random(int a,int b)
+{
+    return a+(1LL*rand()*rand()+rand())%(b-a+1);
+}
+ 
+class treap
+{
+    public:
+        treap()
+        {
+            nil=new node(-1);
+            nil->st=nil->dr=nil;
+            rad=nil;
+        }
+        void insert(int val)
+        {
+            pairnode a=split(rad,val);
+            node *nod=new node(nil,nil,val,random(1,inf));
+            rad=join(a.st,nod);
+            rad=join(rad,a.dr);
+        }
+        void erase(int val)
+        {
+            pairnode a=split(rad,val-1);
+            pairnode b=split(a.dr,val);
+            rad=join(a.st,b.st->st);
+            rad=join(rad,b.st->dr);
+            rad=join(rad,b.dr);
+        }
+        int minn()
+        {
+            if(rad->size==0) return -1;
+            return rad->minn;
+        }
+        int maxx()
+        {
+            if(rad->size==0) return -1;
+            return rad->maxx;
+        }
+        int min_dif()
+        {
+            if(rad->size<=1) return -1;
+            return rad->min_dif;
+        }
+        int max_dif()
+        {
+            if(rad->size<=1) return -1;
+            return rad->maxx-rad->minn;
+        }
+        int cnt_between(int x,int y)
+        {
+            pairnode a=split(rad,x-1);
+            pairnode b=split(a.dr,y);
+            int ret=b.st->size;
+            rad=join(a.st,b.st);
+            rad=join(rad,b.dr);
+            return ret;
+        }
+ 
+    private:
+        struct node
+        {
+            node *st,*dr;
+            int val=0,pr=0,size=0,minn=inf,maxx=-inf,min_dif=inf;
+            node(node *st1,node *dr1,int val1,int pr1)
+            {
+                st=st1;dr=dr1;
+                val=val1;pr=pr1;
+                update();
+            }
+            node(int pr1) {pr=pr1;}
+            void update()
+            {
+                size=st->size+dr->size+1;
+                minn=maxx=val;
+                min_dif=inf;
+                if(st->size>=2) min_dif=min(min_dif,st->min_dif);
+                if(dr->size>=2) min_dif=min(min_dif,dr->min_dif);
+                if(st->size)
+                {
+                    minn=min(minn,st->minn);
+                    maxx=max(maxx,st->maxx);
+                    min_dif=min(min_dif,val-st->maxx);
+                }
+                if(dr->size)
+                {
+                    minn=min(minn,dr->minn);
+                    maxx=max(maxx,dr->maxx);
+                    min_dif=min(min_dif,dr->minn-val);
+                }
+            }
+        };
+        node *nil,*rad;
+ 
+        struct pairnode
+        {
+            node *st,*dr;
+        };
+ 
+        pairnode split(node *nod,int val)
+        {
+            if(nod==nil) return {nil,nil};
+            if(val<nod->val)
+            {
+                pairnode a=split(nod->st,val);
+                nod->st=a.dr;
+                nod->update();
+                return {a.st,nod};
+            }
+            else
+            {
+                pairnode a=split(nod->dr,val);
+                nod->dr=a.st;
+                nod->update();
+                return {nod,a.dr};
+            }
+        }
+        node *join(node *st,node *dr)
+        {
+            if(st==nil && dr==nil) return nil;
+            if(st->pr>dr->pr)
+            {
+                st->dr=join(st->dr,dr);
+                st->update();
+                return st;
+            }
+            else
+            {
+                dr->st=join(st,dr->st);
+                dr->update();
+                return dr;
+            }
+        }
+};
+treap t;
+ 
+struct interv
+{
+    int x,y;
+    bool operator <(const interv &aux) const
+    {
+        return x<aux.x;
+    }
+};
+set<interv> v;
+ 
+pair<interv,interv> update_get(int x,int y)
+{
+    set<interv>::iterator it1,it2,it;
+    it1=v.upper_bound({x,0});
+    it2=v.upper_bound({y,0});
+    if(it1!=v.begin())
+    {
+        it1--;
+        if(it1->y<x) it1++;
+    }
+    for(it=it1;it!=it2;it++)
+        t.erase(it->y-it->x);
+    pair<interv,interv> ret={{inf,0},{0,0}};
+    if(it1!=it2)
+    {
+        it2--;
+        ret={*it1,*it2};
+        it2++;
+    }
+    v.erase(it1,it2);
+    return ret;
+}
+ 
+void add_int(int x,int y)
+{
+    auto ret=update_get(x,y);
+    if(ret.first.x!=inf)
+    {
+        x=min(x,ret.first.x);
+        y=max(y,ret.second.y);
+    }
+    v.insert({x,y});
+    t.insert(y-x);
+}
+ 
+void erase_int(int x,int y)
+{
+    if(x==y) return;
+    auto ret=update_get(x,y);
+    if(ret.first.x==inf) return;
+    if(ret.first.x<=x)
+    {
+        v.insert({ret.first.x,x});
+        t.insert(x-ret.first.x);
+    }
+    if(y<=ret.second.y)
+    {
+        v.insert({y,ret.second.y});
+        t.insert(ret.second.y-y);
+    }
+}
+ 
+int main()
+{
+    freopen("brasov.in", "r", stdin);
+    freopen("brasov.out", "w", stdout);
+    int q,x,y;
+    char sir[15];
+    for(scanf("%d",&q);q;q--)
+    {
+        scanf("\n%s",sir);
+        if(sir[0]=='0')
+        {
+            scanf("%d%d",&x,&y);
+            erase_int(x,y);
+        }
+        else if(sir[0]=='1')
+        {
+            scanf("%d%d",&x,&y);
+            add_int(x,y);
+        }
+        else if(sir[0]=='2')
+        {
+            scanf("%d%d",&x,&y);
+            printf("%d\n",t.cnt_between(x,y));
+        }
+        else if(sir[0]=='M')
+        {
+            if(sir[1]=='I') printf("%d\n",t.minn());
+            else printf("%d\n",t.maxx());
+        }
+        else if(sir[0]=='D')
+        {
+            if(sir[6]=='i') printf("%d\n",t.min_dif());
+            else printf("%d\n",t.max_dif());
+        }
+    }
+    return 0;
+}

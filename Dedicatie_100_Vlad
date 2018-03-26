@@ -1,0 +1,164 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+int alpha[100001];
+int weight[100001];
+int ancestors[20][100001];
+int where[100001];
+int fathers[100001];
+int costs[100001];
+int position[100001];
+int suffixArrays[20][100001];
+vector <int> leftNodes;
+vector <int> rightNodes;
+vector <pair <int, int>> initialGraph[100001];
+vector <int> roots;
+vector <pair <long long, int>> edges;
+vector <pair <int, int>> initialEdges;
+ 
+void buildRoots (int node, int tata, int totalSize, int index) {
+    weight[node] = 1;
+    for (auto x : initialGraph[node]) {
+        if (x.first == tata) {
+            continue;
+        }
+        buildRoots(x.first, node, totalSize, x.second);
+        weight[node] += weight[x.first];
+    }
+    if (!tata) {
+        return;
+    }
+    if (weight[node] == totalSize - weight[node]) {
+        roots.push_back(node);
+        roots.push_back(tata);
+    }
+    edges.push_back({1LL * weight[node] * (totalSize - weight[node]), totalSize - index});
+}
+ 
+void buildGraphFathers (int currentNode, int currentFather, int otherRoot, int graph) {
+    fathers[currentNode] = currentFather;
+    where[currentNode] = graph;
+    for (auto x : initialGraph[currentNode]) {
+        if (x.first == currentFather or x.first == otherRoot) {
+            continue;
+        }
+        buildGraphFathers(x.first, currentNode, otherRoot, graph);
+    }
+}
+ 
+void buildDPAncestors (int n) {
+    for (int i = 1; i <= n; ++i) {
+        ancestors[0][i] = fathers[i];
+    }
+    for (int i = 1; i < 20; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            ancestors[i][j] = ancestors[i - 1][ancestors[i - 1][j]];
+        }
+    }
+}
+ 
+void sortNodes (vector <int>& nodes) {
+    for (int i = 0; i < nodes.size(); ++i) {
+        suffixArrays[0][i] = costs[nodes[i]];
+        position[nodes[i]] = i;
+    }
+    for (int i = 1; i < 20; ++i) {
+        vector <pair <pair <int, int>, int>> states;
+        for (int j = 0; j < nodes.size(); ++j) {
+            pair <pair <int, int>, int> current;
+            current.second = j;
+            current.first.first = suffixArrays[i - 1][j];
+            current.first.second = 0;
+            if (ancestors[i - 1][nodes[j]]) {
+                current.first.second = suffixArrays[i - 1][position[ancestors[i - 1][nodes[j]]]];
+            }
+            states.push_back (current);
+        }
+        sort (states.begin(), states.end());
+        int currentValue = 0;
+        for (int j = 0; j < states.size(); ++j) {
+            if (j and states[j - 1].first != states[j].first) {
+                currentValue += 1;
+            }
+            suffixArrays[i][states[j].second] = currentValue;
+        }
+    }
+    vector <pair<int, int>> sorted;
+    for (int i = 0; i < nodes.size(); ++i) {
+        sorted.push_back({suffixArrays[19][i], nodes[i]});
+    }
+    sort (sorted.begin(), sorted.end());
+    for (int i = 0; i < nodes.size(); ++i) {
+        nodes[i] = sorted[i].second;
+    }
+}
+ 
+ 
+int main() {
+    ifstream fin ("dedicatie.in");
+    ofstream fout ("dedicatie.out");
+    int n, firstRoot, secondRoot;
+    fin >> n;
+    for (int i = 1; i < n; ++i) {
+        int x, y;
+        fin >> x >> y;
+        initialGraph[x].push_back({y, i});
+        initialGraph[y].push_back({x, i});
+        initialEdges.push_back({x, y});
+    }
+    for (int i = 1; i < n; ++i) {
+        fin >> alpha[i];
+    }
+    buildRoots (1, 0, n, -1);
+    assert (roots.size() == 2);
+    firstRoot = roots[0];
+    secondRoot = roots[1];
+    sort (edges.begin(), edges.end());
+    reverse (edges.begin(), edges.end());
+    for (auto& x : edges) {
+        x.second = n - x.second;
+    }
+    for (int i = 0; i < edges.size(); ++i) {
+        edges[i].first = (1LL * i * alpha[i + 1]) % 100003;
+    }
+    buildGraphFathers(firstRoot, 0, secondRoot, 0);
+    buildGraphFathers(secondRoot, 0, firstRoot, 1);
+    buildDPAncestors(n);
+    for (auto x : edges) {
+        int currentCost = x.first;
+        int index = x.second - 1;
+        if (fathers[initialEdges[index].first] == initialEdges[index].second) {
+            costs[initialEdges[index].first] = currentCost;
+            continue;
+        }
+        if (fathers[initialEdges[index].second] == initialEdges[index].first) {
+            costs[initialEdges[index].second] = currentCost;
+            continue;
+        }
+        costs[initialEdges[index].first] = 0;
+        costs[initialEdges[index].second] = 0;
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (where[i]) {
+            rightNodes.push_back(i);
+        }
+        else {
+            leftNodes.push_back(i);
+        }
+    }
+    assert (rightNodes.size() == n/2 and leftNodes.size() == n/2);
+    sortNodes(leftNodes);
+    sortNodes(rightNodes);
+    int currentLeft = 0;
+    int currentRight = 0;
+    for (int i = 1; i <= n; ++i) {
+        if (where[i]) {
+            fout << leftNodes[currentLeft++] << '\n';
+        }
+        else {
+            fout << rightNodes[currentRight++] << '\n';
+        }
+    }
+    return 0;
+}

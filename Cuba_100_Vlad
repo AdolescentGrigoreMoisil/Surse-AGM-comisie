@@ -1,0 +1,220 @@
+/*
+ * Vlad-Andrei Munteanu
+ * University: University of Manchester
+ * Problem: Cuba
+ * Author: George Chichirim
+ * Contest: "Adolescent Grigore Moisil"
+ * Expected: Accepted
+ */
+ 
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+//declarations - begin
+const int MAXN = 1e5;
+const int MAXQ = 1e5;
+const int MAXCarCapacity = 1e5;
+const int MAXEdge = 1e5;
+const int MAXLog = 20;
+int beginOfNode[MAXN + 10];
+int endOfNode[MAXN + 10];
+int ancestors[MAXLog + 1][MAXN + 10];
+int fathers[MAXN + 10];
+int levelOfNodes[MAXN + 10];
+long long answers[MAXQ + 10];
+long long fenwickTreePowerZero[(MAXN << 1) + 10];
+long long fenwickTreePowerOne[(MAXN << 1) + 10];
+long long fenwickTreePowerTwo[(MAXN << 1) + 10];
+bool visited[MAXN + 10];
+vector <pair <pair <int, int>, pair <int, int>>> queries; //cost, index, node1, node2
+vector <pair <int, int>> edges; //cost, node
+vector <vector <int>> graph;
+//declarations - end
+ 
+void buildEulerTraversal (vector <vector <int>>& graph, int currentNode, int father, int& currentPosition) {
+    currentPosition += 1;
+    beginOfNode[currentNode] = currentPosition;
+    for (auto currentNeighbor : graph[currentNode]) {
+        if (currentNeighbor == father) {
+            continue;
+        }
+        buildEulerTraversal(graph, currentNeighbor, currentNode, currentPosition);
+    }
+    currentPosition += 1;
+    endOfNode[currentNode] = currentPosition;
+} //buildEulerTraversal
+ 
+void buildFathersAndLevel (vector <vector <int>>& graph, int currentNode, int father, int level) {
+    fathers[currentNode] = father;
+    levelOfNodes[currentNode] = level;
+    for (auto currentNeighbor : graph[currentNode]) {
+        if (currentNeighbor == father) {
+            continue;
+        }
+        buildFathersAndLevel(graph, currentNeighbor, currentNode, level + 1);
+    }
+} //buildFathers
+ 
+void buildAncestors (int numberOfNodes, int fathers[]) {
+    for (int currentNode = 1; currentNode <= numberOfNodes; ++currentNode) {
+        ancestors[0][currentNode] = fathers[currentNode];
+    }
+    for (int currentPower = 1; currentPower <= MAXLog; ++currentPower) {
+        for (int currentNode = 1; currentNode <= numberOfNodes; ++currentNode) {
+            ancestors[currentPower][currentNode] = ancestors[currentPower - 1][ancestors[currentPower - 1][currentNode]];
+        }
+    }
+} //buildAncestors
+ 
+int getLowestCommonAncestor (int firstNode, int secondNode) {
+    if (levelOfNodes[firstNode] > levelOfNodes[secondNode]) {
+        swap (firstNode, secondNode);
+    }
+    for (int currentPower = MAXLog; currentPower >= 0; --currentPower) {
+        if (levelOfNodes[secondNode] - levelOfNodes[firstNode] >= (1 << currentPower)) {
+            secondNode = ancestors[currentPower][secondNode];
+        }
+    }
+    if (secondNode == firstNode) {
+        return firstNode;
+    }
+    for (int currentPower = MAXLog; currentPower >= 0; --currentPower) {
+        if (ancestors[currentPower][firstNode] != ancestors[currentPower][secondNode]) {
+            firstNode = ancestors[currentPower][firstNode];
+            secondNode = ancestors[currentPower][secondNode];
+        }
+    }
+    assert(firstNode != secondNode);
+    firstNode = fathers[firstNode];
+    secondNode = fathers[secondNode];
+    assert (firstNode == secondNode);
+    return firstNode;
+} //getLowestCommonAncestor
+ 
+int theMostUnsignificantBit (int currentVaue) {
+    return currentVaue & (-currentVaue);
+} //theMostUnsignificantBit
+ 
+void updateFenwick (long long currentTree[], int treeSize, int position, long long value) {
+    while (position <= treeSize) {
+        currentTree[position] += value;
+        position += theMostUnsignificantBit(position);
+    }
+} //updateFenwick
+ 
+long long sumFromZeroToPosition (long long currentTree[], int position) {
+    long long answer = 0LL;
+    while (position) {
+        answer += currentTree[position];
+        position -= theMostUnsignificantBit(position);
+    }
+    return answer;
+} //sumFromZeroToPosition
+ 
+void updateEdge (int currentNode, long long value, int numberOfNodes) {
+    updateFenwick(fenwickTreePowerZero, numberOfNodes << 1, beginOfNode[currentNode], 1);
+    updateFenwick(fenwickTreePowerZero, numberOfNodes << 1, endOfNode[currentNode], -1);
+    updateFenwick(fenwickTreePowerOne, numberOfNodes << 1, beginOfNode[currentNode], value);
+    updateFenwick(fenwickTreePowerOne, numberOfNodes << 1, endOfNode[currentNode], -value);
+    updateFenwick(fenwickTreePowerTwo, numberOfNodes << 1, beginOfNode[currentNode], value * value);
+    updateFenwick(fenwickTreePowerTwo, numberOfNodes << 1, endOfNode[currentNode], - (value * value));
+} //updateEdge
+ 
+long long answerQuery (int firstNode, int secondNode, long long carCapacity) {
+    int lowestCommonAncestor = getLowestCommonAncestor(firstNode, secondNode);
+    long long powerTwo = sumFromZeroToPosition(fenwickTreePowerTwo, beginOfNode[firstNode]);
+    powerTwo += sumFromZeroToPosition(fenwickTreePowerTwo, beginOfNode[secondNode]);
+    powerTwo -= (sumFromZeroToPosition(fenwickTreePowerTwo, beginOfNode[lowestCommonAncestor]) << 1);
+    long long powerOne = sumFromZeroToPosition(fenwickTreePowerOne, beginOfNode[firstNode]);
+    powerOne += sumFromZeroToPosition(fenwickTreePowerOne, beginOfNode[secondNode]);
+    powerOne -= (sumFromZeroToPosition(fenwickTreePowerOne, beginOfNode[lowestCommonAncestor]) << 1);
+    long long powerZero = sumFromZeroToPosition(fenwickTreePowerZero, beginOfNode[firstNode]);
+    powerZero += sumFromZeroToPosition(fenwickTreePowerZero, beginOfNode[secondNode]);
+    powerZero -= (sumFromZeroToPosition(fenwickTreePowerZero, beginOfNode[lowestCommonAncestor]) << 1);
+    long long answer = powerTwo - ((powerOne * carCapacity) << 1) + powerZero * carCapacity * carCapacity;
+    return answer;
+} //answerQuery;
+ 
+bool checkIsTree (vector <vector <int>>& graph, int currentNode, int father, bool visited[]) {
+    bool isTree = true;
+    visited[currentNode] = true;
+    for (auto currentNeighbor : graph[currentNode]) {
+        if (currentNeighbor == father) {
+            continue;
+        }
+        if (visited[currentNeighbor]) {
+            return false;
+        }
+        isTree &= checkIsTree(graph, currentNeighbor, currentNode, visited);
+    }
+    return isTree;
+} //checkIsTree
+ 
+bool checkConnexity (bool visited[], int numberOfNodes) {
+    for (int currentNode = 1; currentNode <= numberOfNodes; ++currentNode) {
+        if (!visited[currentNode]) {
+            return false;
+        }
+    }
+    return true;
+} //checkConexity
+ 
+bool checkGraph (vector <vector <int>> graph, bool visited[], int numberOfNodes) {
+    bool isFine = checkIsTree(graph, 1, 0, visited);
+    isFine &= checkConnexity (visited, numberOfNodes);
+    return isFine;
+} //checkGraph
+ 
+int main() {
+    ifstream fin ("cuba.in");
+    ofstream fout ("cuba.out");
+    ios::sync_with_stdio(false);
+    fin.tie(0);
+    fout.tie(0);
+    int numberOfNodes, numberOfQueries, maximEulerPosition = 0;
+    assert (fin >> numberOfNodes >> numberOfQueries);
+    assert (1 <= numberOfNodes and numberOfNodes <= MAXN);
+    assert (1 <= numberOfQueries and numberOfQueries <= MAXQ);
+    graph.resize(numberOfNodes + 1);
+    for (int currentNode = 2; currentNode <= numberOfNodes; ++currentNode) {
+        int father, length;
+        assert (fin >> father >> length);
+        assert (1 <= father and father <= numberOfNodes);
+        assert (0 <= length and length <= MAXEdge);
+        graph[father].push_back(currentNode);
+        graph[currentNode].push_back(father);
+        edges.push_back({length, currentNode});
+    }
+    assert (checkGraph(graph, visited, numberOfNodes));
+    buildEulerTraversal(graph, 1, 0, maximEulerPosition);
+    buildFathersAndLevel(graph, 1, 0, 1);
+    buildAncestors(numberOfNodes, fathers);
+    sort (edges.begin(), edges.end());
+    for (int currentQuery = 1; currentQuery <= numberOfQueries; ++currentQuery) {
+        int firstNode, secondNode, carCapacity;
+        assert (fin >> firstNode >> secondNode >> carCapacity);
+        assert (1 <= firstNode and firstNode <= MAXN);
+        assert (1 <= secondNode and secondNode <= MAXN);
+        assert (0 <= carCapacity and carCapacity <= MAXCarCapacity);
+        queries.push_back({{carCapacity, currentQuery}, {firstNode, secondNode}});
+    }
+    sort (queries.begin(), queries.end());
+    reverse (queries.begin(), queries.end());
+    int currentIndexOfEdge = numberOfNodes - 2;
+    for (auto currentQuery : queries) {
+        int carCapacity = currentQuery.first.first;
+        int firstNode = currentQuery.second.first;
+        int secondNode = currentQuery.second.second;
+        while (currentIndexOfEdge >= 0 and edges[currentIndexOfEdge].first >= carCapacity) {
+//            cerr << beginOfNode[edges[currentIndexOfEdge].second] << ' ' << endOfNode[edges[currentIndexOfEdge].second] << '\n';
+            updateEdge(edges[currentIndexOfEdge].second, edges[currentIndexOfEdge].first, numberOfNodes);
+            currentIndexOfEdge -= 1;
+        }
+        answers[currentQuery.first.second] = answerQuery(firstNode, secondNode, carCapacity);
+    }
+    for (int currentQuery = 1; currentQuery <= numberOfQueries; ++currentQuery) {
+        fout << answers[currentQuery] << '\n';
+    }
+    return 0;
+}

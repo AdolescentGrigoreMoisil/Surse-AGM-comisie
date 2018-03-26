@@ -1,0 +1,53 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+const double eps = 1e-9;
+
+void result(const char msg[], int p) {
+    fprintf(stderr, "%s", msg);
+    printf("%d", p);
+    exit(0);
+}
+
+int main() {
+	ifstream fin("eqprob.in");
+	if (!fin) {
+		result("Fisier de intrare lipsa!", 0);
+	}
+
+	ifstream fout("eqprob.out");
+	if (!fout) {
+		result("Fisier de iesire lipsa!", 0);
+	}
+	
+	ifstream fok("eqprob.ok");
+	if (!fok) {
+		result("Fisier ok lipsa!", 0);
+	}
+
+	int T;
+	if (!(fin >> T)) {
+		result("Fisier de intrare corupt!", 0);
+	}
+
+	while (T--) {
+		double contestantAns;
+		if (!(fout >> contestantAns)) {
+			result("Fisier de iesire corupt!", 0);
+		}
+
+		double okAns;
+		if (!(fok >> okAns)) {
+			result("Fisier ok corupt!", 0);
+		}
+		
+		if (fabs(contestantAns - okAns) > eps) {
+			result("Incorect", 0);
+		}
+	}
+
+	result("OK", 100);
+	
+	return 0;
+}

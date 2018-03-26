@@ -1,0 +1,294 @@
+/*Patrick Catalin Alexandru Sava
+The University of Manchester
+Evaluator for the minimal path found by the contestant
+Problem : Pe sapte carari*/
+
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <bitset>
+
+using namespace std;
+
+// constants
+const int MaxNumberOfNodes = static_cast<const int>(1e5);
+const int MaxNumberOfEdges = static_cast<const int>(666013);
+const long long MaxValue = static_cast<const long long int>(1e12);
+
+template <typename T>
+bool isBetween (T inf, T num, T sup)
+{
+    return inf <= num and num <= sup;
+}// isBetween with template
+
+void result(char msg[],int p) {
+    fprintf(stderr,msg);
+    fprintf(stdout,"%d",p);
+    exit(0);
+}
+
+vector <long long> sieve (int limit)
+{
+    // eratosthenes's  sieve
+    const auto MAX = static_cast<const int>(1e6 + 14);
+    bitset <MAX> isNotPrime;
+    isNotPrime.reset();
+    vector <long long> factors;
+    for (int currentNumber = 2; currentNumber <= limit; ++ currentNumber)
+    {
+        if (isNotPrime [currentNumber] == 0)
+        {
+            for (int hasToBeNotPrime = currentNumber + currentNumber; hasToBeNotPrime <= limit;
+                 hasToBeNotPrime += currentNumber)
+            {
+                isNotPrime[hasToBeNotPrime] = 1;
+            }
+            factors.push_back(currentNumber);
+        }
+    }
+    return factors;
+}// sieve
+
+bool checkCorrectness (int numberOfNodes, vector < vector <int> > &graph, vector <long long> &valueOfNode,
+                       long long primeFactor, int source, int destination, vector <int> &contestantsPath,
+                       int exponent, int minimumCost)
+{
+    if (contestantsPath.empty())
+    {
+        result(const_cast<char *>("Raspuns corect, dar drum gresit construit!"), 0);
+    }
+    if (source != contestantsPath[0])
+    {
+        result(const_cast<char *>("Raspuns corect, dar drum gresit construit!"), 0);
+    }
+    vector <long long> cost (numberOfNodes + 1, 0);
+    for (int currentNode = 1; currentNode <= numberOfNodes; ++ currentNode) {
+        long long temp = valueOfNode[currentNode];
+        if (temp == 0) {
+            // pay attention to this tricky case
+            cost [currentNode] = 1LL << 35;
+            continue;
+        }
+        while (temp % primeFactor == 0) {
+            // increase the cost whilst temp divides primeFactor
+            cost [currentNode] += 1;
+            temp /= primeFactor;
+        }
+    }
+
+    int last = -1;
+    int sum = 0;
+    for (auto &node : contestantsPath)
+    {
+        sum += cost [node];
+        if (last == -1)
+        {
+            last = node;
+            continue;
+        }
+        else
+        {
+            bool ok = false;
+            for (auto &neighbour : graph [last])
+            {
+                if (neighbour == node)
+                {
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok)
+            {
+                result(const_cast<char *>("Raspuns corect, dar drum gresit construit!"), 0);
+            }
+        }
+        last = node;
+    }
+    if (last != destination)
+    {
+        result (const_cast<char *>("Fisier de iesire corupt!"), 0);
+    }
+    return sum / exponent == minimumCost;
+}// checkCorrectness
+
+int main(){
+    const char input[] =     "pesaptecarari.in";
+    const char committee[] = "pesaptecarari.ok";
+    const char contestant[] ="pesaptecarari.out";
+
+    ifstream inputStream (input);
+    if (!inputStream.is_open())
+    {
+        result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+    }
+    ifstream committeeStream (committee);
+    if (!committeeStream.is_open())
+    {
+        result(const_cast<char *>("Fisier .ok corupt - anuntati comisia"), 0);
+    }
+    ifstream contestantStream (contestant);
+    if (!contestantStream.is_open())
+    {
+        result(const_cast<char *>("Fisier de iesire corupt"), 0);
+    }
+    int ourCorrectAnswer;
+    if (!(committeeStream >> ourCorrectAnswer))
+    {
+        result(const_cast<char *>("Fisier .ok corupt - anuntati comisia"), 0);
+    }
+
+    int contestantsAnswer;
+    if (!(contestantStream >> contestantsAnswer))
+    {
+        result(const_cast<char *>("Fisier de iesire corupt"), 0);
+    }
+    if (ourCorrectAnswer != contestantsAnswer)
+    {
+        result(const_cast<char *>("Raspuns gresit!"), 0);
+    }
+    int numberOfNodes, numberOfEdges;
+    long long target;
+    if (!(inputStream >> numberOfNodes >> numberOfEdges >> target))
+    {
+        result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+    }
+    if (!(isBetween(1LL, target, MaxValue)))
+    {
+        result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+    }
+    if (!(isBetween(1, numberOfNodes, MaxNumberOfNodes)))
+    {
+        result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+    }
+    if (!(isBetween(1, numberOfEdges, MaxNumberOfEdges)))
+    {
+        result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+    }
+    vector <long long> valueOfNode(static_cast<unsigned int>(numberOfNodes + 1));
+    for (int currentNode = 1; currentNode <= numberOfNodes; ++ currentNode)
+    {
+        // for each node
+        if (!(inputStream >> valueOfNode [currentNode]))
+        {
+            result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+        }
+        if (!isBetween(1LL, valueOfNode[currentNode], MaxValue))
+        {
+            result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+        }
+    }
+    vector < vector <int> > graph (static_cast<unsigned int>(numberOfNodes + 1));
+    for (int currentEdge = 1; currentEdge <= numberOfEdges; ++ currentEdge)
+    {
+        // read each edge
+        int firstNode, secondNode;
+        if (!(inputStream >> firstNode >> secondNode))
+        {
+            result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+        }
+        if (!(isBetween(1, firstNode, numberOfNodes)))
+        {
+            result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+        }
+        if (!(isBetween(1, secondNode, numberOfNodes)))
+        {
+            result(const_cast<char *>("Fisier de intrare corupt - anuntati comisia"), 0);
+        }
+        graph [firstNode].push_back(secondNode);
+    }
+    auto factors = sieve(1000000);
+    const int source = 1;
+    const int destination = numberOfNodes;
+    // factorize target
+    vector < pair <long long, int> > factorsAndExponents;
+    for (auto &currentFactor : factors)
+    {
+        if (currentFactor * currentFactor > target)
+        {
+            break;
+        }
+        int times = 0;
+        while (target % currentFactor == 0)
+        {
+            target /= currentFactor;
+            times += 1;
+        }
+
+        if (times)
+        {
+            factorsAndExponents.emplace_back(currentFactor, times);
+        }
+    }
+    if (target != 1LL)
+    {
+        factorsAndExponents.emplace_back(target, 1);
+    }
+    vector <bool> visited (static_cast<unsigned int>(numberOfNodes + 1), false);
+    vector <int> contestantPath;
+    int lastNode = -1;
+    int currentElement;
+    while (contestantStream >> currentElement)
+    {
+        if (!isBetween(1, currentElement, numberOfNodes))
+        {
+            result(const_cast<char *>("Fisier de iesire corupt"), 0);
+        }
+        if (lastNode != -1)
+        {
+            bool ok = false;
+            for (auto &neighbour : graph [lastNode])
+            {
+                if (neighbour == currentElement)
+                {
+                    ok = true;
+                }
+            }
+            if (!ok)
+            {
+                result(const_cast<char *>("Raspuns corect, dar drum gresit construit!"), 0);
+            }
+        }
+        else
+        {
+            if (currentElement != source)
+            {
+                result(const_cast<char *>("Raspuns corect, dar drum gresit construit!"), 0);
+            }
+        }
+        lastNode = currentElement;
+        contestantPath.push_back(currentElement);
+        if (visited [currentElement])
+        {
+            result(const_cast<char *>("Raspuns corect, dar solutia nu este lant elementar!"), 0);
+        }
+        visited [currentElement] = 1;
+    }
+    if (contestantPath.empty())
+    {
+        result(const_cast<char *>("Raspuns corect, dar drum gresit construit!"), 0);
+    }
+    if (contestantPath.back() != destination)
+    {
+        result(const_cast<char *>("Raspuns corect, dar drum gresit construit!"), 0);
+    }
+    bool solution = false;
+    for (auto &factorAndExponent : factorsAndExponents)
+    {
+        auto factor = factorAndExponent.first;
+        auto exponent = factorAndExponent.second;
+        vector <int> correspondingPath;
+        solution |= checkCorrectness(numberOfNodes, graph, valueOfNode, factor, source,
+                                     destination, contestantPath, exponent, ourCorrectAnswer);
+        if (solution)
+        {
+            result(const_cast<char *>("Cu un pas mai aproape de medalie!"), 10);
+        }
+    }
+    if (solution)
+    {
+        result(const_cast<char *>("Cu un pas mai aproape de medalie!"), 10);
+    }
+    result(const_cast<char *>("Aproape, dar totusi atat de departe"), 0);
+    return 0;
+}

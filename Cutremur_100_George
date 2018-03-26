@@ -1,0 +1,40 @@
+/**
+  * George Chichirim
+  * University of Oxford
+  * Expected: Accepted
+*/
+#include <bits/stdc++.h>
+ 
+using namespace std;
+ 
+vector<vector<int> > sol;
+ 
+void gen_seq(int x,int y,int d,int nr)
+{
+    for(int i=0;i<nr;i++)
+        if(i&1) sol.push_back({x+i*d,y,2*d});
+        else sol.push_back({x+i*d,y,d});
+}
+ 
+int main()
+{
+    freopen("cutremur.in", "r", stdin);
+    freopen("cutremur.out", "w", stdout);
+    gen_seq(11,1,4,1);
+    gen_seq(7,5,4,3);
+    for(int i=0;i<3;i++)
+        gen_seq(3+i*8,6,1,1);
+    for(int i=0;i<3;i++)
+        gen_seq(2+i*8,7,1,3);
+    for(int i=0;i<3;i++)
+        gen_seq(1+i*8,8,1,5);
+    for(int i=0;i<3;i++)
+        gen_seq(1+i*8,9,2,3);
+    gen_seq(5,7,4,1);
+    gen_seq(7,7,2,1);
+    gen_seq(5,5,2,1);
+    printf("%d\n",sol.size());
+    for(int i=0;i<sol.size();i++)
+        printf("%d %d %d\n",sol[i][0],sol[i][1],sol[i][2]);
+    return 0;
+}

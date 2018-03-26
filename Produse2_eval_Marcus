@@ -1,0 +1,82 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define MAXN 500050
+
+int A[MAXN], B[MAXN];
+
+void result(const char msg[], int p) {
+  fprintf(stderr, msg);
+  printf("%d", p);
+  exit(0);
+}
+
+int main() {
+  ifstream fin("produse2.in");
+  if (!fin) {
+    result("Fisier de intrare lipsa!", 0);
+  }
+
+  ifstream fout("produse2.out");
+  if (!fout) {
+    result("Fisier de iesire lipsa!", 0);
+  }
+
+  ifstream fok("produse2.ok");
+  if (!fok) {
+    result("Fisier ok lipsa!", 0);
+  }
+
+  int T;
+  if (!(fin >> T)) {
+    result("Fisier de intrare corupt!", 0);
+  }
+
+  while (T--) {
+    int N;
+    if (!(fin >> N)) {
+      result("Fisier de intrare corupt!", 0);
+    }
+    for (int i = 0; i < N - 1; i++) {
+      if (!(fin >> B[i])) {
+        result("Fisier de intrare corupt!", 0);
+      }
+    }
+    int bmax = *max_element(B, B + N - 1);
+    
+    int okAns;
+    if (!(fok >> okAns)) {
+      result("Fisier ok corupt!", 0);
+    }
+
+    int contestantAns;
+    if (!(fout >> contestantAns)) {
+      result("Fisier define iesire corupt!", 0);
+    }
+
+    if (okAns != contestantAns) {
+      result("Incorect", 0);
+    }
+
+    if (okAns > 0) {
+      for (int i = 0; i < N; i++) {
+        if (!(fout >> A[i])) {
+          result("Fisier de iesire corupt!", 0);
+        }
+        if (A[i] < 1 || A[i] > bmax) {
+          result("Incorect", 0);
+        }
+      }
+      for (int i = 0; i < N - 1; i++) {
+        if ((long long) A[i] * A[i + 1] != B[i]) {
+          result("Incorect", 0);
+        }
+      }
+    }
+  }
+
+  result("OK", 25);
+  
+  return 0;
+}

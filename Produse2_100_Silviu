@@ -1,0 +1,136 @@
+/*Silviu Troscot
+The University of Manchester
+Expected : Accepted*/
+import java.io.OutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.util.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
+  
+  
+public class Main {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
+        InputStream inputStream = new FileInputStream(new File("produse2.in"));
+        OutputStream outputStream = new FileOutputStream(new File("produse2.out"));
+        InputReader in = new InputReader(inputStream);
+        PrintWriter out = new PrintWriter(outputStream);
+        Task solver = new Task();
+        solver.solve(in, out);
+        out.close();
+    }
+  
+    static class Task{
+        static final int INF = (int) 1.01e9;
+  
+        public void solve(InputReader in, PrintWriter out){
+            int numberOfTests = in.nextInt();
+  
+            // iterate through tests 
+            for (int testIndex = 0; testIndex < numberOfTests; testIndex++) {
+                  
+                int numberOfElements = in.nextInt();
+                  
+                int[] b = new int[numberOfElements - 1];
+                for (int index = 0; index < b.length; index++){
+                    b[index] = in.nextInt();
+                }
+                // try to reconstruct A considering each divisor of B[1] as A[1]
+                int numberOfSollutions = 0;
+                boolean solutionFound = false;
+                int[] a = new int[numberOfElements];
+                for (int divisor : getPrimeFactors(b[0])) {
+                    int solutionIndex = 1;
+                    if (!solutionFound) {
+                        a[0] = divisor;
+                        while (solutionIndex < numberOfElements) {
+                            if (b[solutionIndex - 1] % a[solutionIndex - 1] == 0) {
+                                a[solutionIndex] = b[solutionIndex - 1] / a[solutionIndex - 1];
+                                solutionIndex++;
+                            }
+                            else break;    
+                        }
+                    }
+                    else {
+                        int prevTerm = divisor;
+                        while (solutionIndex < numberOfElements) {
+                            if (b[solutionIndex - 1] % prevTerm == 0) {
+                                prevTerm = b[solutionIndex - 1] / prevTerm;
+                                solutionIndex++;
+                            }
+                            else break;    
+                        }
+                    }
+                          
+                    // check if the built array is a solution
+                    if (solutionIndex == numberOfElements) {
+                        numberOfSollutions++;
+                        solutionFound = true;
+                    }
+                }
+  
+                if (solutionFound) {
+                    out.println(numberOfSollutions);
+                    for(int index = 0; index < numberOfElements; index++){
+                            out.print(a[index]);
+                            out.print(" ");
+                        }
+                    out.println("");
+                }
+                else {
+                    out.println("0");
+                }
+            }
+  
+        }
+  
+        public List<Integer> getPrimeFactors(int inputNumber){
+            Double squareRoot = Math.sqrt((double)inputNumber);
+            List<Integer> primeFactors = new ArrayList<>();
+            for(int index = 1; (double)index <= squareRoot; index++) {
+                if (inputNumber % index == 0){
+                    primeFactors.add(index);
+                    if (index == inputNumber / index)
+                    {
+                        continue;
+                    }
+                    primeFactors.add(new Integer(inputNumber / index));
+                }
+            }
+  
+            return primeFactors;
+        }
+      
+    }
+  
+    static class InputReader {
+        public BufferedReader reader;
+        public StringTokenizer tokenizer;
+  
+        public InputReader(InputStream stream) {
+            reader = new BufferedReader(new InputStreamReader(stream), 32768);
+            tokenizer = null;
+        }
+  
+        public String next() {
+            while (tokenizer == null || !tokenizer.hasMoreTokens()) {
+                try {
+                    tokenizer = new StringTokenizer(reader.readLine());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return tokenizer.nextToken();
+        }
+  
+        public int nextInt() {
+            return Integer.parseInt(next());
+        }
+  
+    }
+}

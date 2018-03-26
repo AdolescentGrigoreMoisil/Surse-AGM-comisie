@@ -1,0 +1,355 @@
+/*Patrick Catalin Alexandru Sava
+The University of Manchester
+Expected: Accepted*/
+ 
+#include <fstream>
+#include <cassert>
+#include <vector>
+ 
+using namespace std;
+ 
+template <typename T>
+bool isBetween (T inf, T number, T sup)
+{
+    return inf <= number and number <= sup;
+}
+ 
+class SegmentTree
+{
+public:
+    SegmentTree()
+    {
+ 
+    }
+    SegmentTree(int maxValue)
+    {
+        this -> maxValue = maxValue;
+        tree.resize(static_cast<unsigned int>(maxValue << 3), 0);
+        lazy.resize(static_cast<unsigned int>(maxValue << 3), 0);
+    }
+    void UpdateOnPosition(int position, long long updatingValue)
+    {
+        updateOnPosition(1, 1, maxValue, position, updatingValue);
+    }
+    void UpdateOnRange(int _left, int _right, long long updatingValue)
+    {
+        rangeUpdate(1, 1, maxValue, _left, _right, updatingValue);
+    }
+    long long RangeSum(int _left, int _right)
+    {
+        return rangeQuery(1, 1, maxValue, _left, _right);
+    }
+private:
+    int maxValue;
+    vector <long long> tree;
+    vector <long long> lazy;
+    void push(int node, int _left, int _right)
+    {
+        if (_left > _right)
+        {
+            return;
+        }
+        int leftSon = node << 1;
+        int rightSon = node << 1 | 1;
+        tree [node] += 1LL * lazy [node] * (_right - _left + 1);
+        if (_left != _right)
+        {
+            lazy [leftSon] += lazy [node];
+            lazy [rightSon] += lazy [node];
+        }
+        lazy [node] = 0;
+    }
+    void updateOnPosition (int node, int _left, int _right, int position, long long updatingValue)
+    {
+        int middle = (_left + _right) >> 1;
+        int leftSon = node << 1;
+        int rightSon = node << 1 | 1;
+        push(node, _left, _right);
+        push(leftSon, _left, middle);
+        push(rightSon, middle + 1, _right);
+ 
+        if (_left == _right)
+        {
+            tree [node] = updatingValue;
+            return;
+        }
+ 
+        if (position <= middle)
+        {
+            updateOnPosition(leftSon, _left, middle, position, updatingValue);
+        }
+        else
+        {
+            updateOnPosition(rightSon, middle + 1, _right, position, updatingValue);
+        }
+ 
+        push(node, _left, _right);
+        push(leftSon, _left, middle);
+        push(rightSon, middle + 1, _right);
+ 
+        tree [node] = tree [leftSon] + tree [rightSon];
+    }
+ 
+    void rangeUpdate (int node, int _left, int _right, int leftUpdate, int rightUpdate, long long updatingValue)
+    {
+        int middle = (_left + _right) >> 1;
+        int leftSon = node << 1;
+        int rightSon = node << 1 | 1;
+        push(node, _left, _right);
+        push(leftSon, _left, middle);
+        push(rightSon, middle + 1, _right);
+ 
+        if (leftUpdate <= _left and _right <= rightUpdate)
+        {
+            lazy [node] += updatingValue;
+            return;
+        }
+ 
+        if (leftUpdate <= middle)
+        {
+            rangeUpdate(leftSon, _left, middle, leftUpdate, rightUpdate, updatingValue);
+        }
+        if (rightUpdate > middle)
+        {
+            rangeUpdate(rightSon, middle + 1, _right, leftUpdate, rightUpdate, updatingValue);
+        }
+ 
+        push(node, _left, _right);
+        push(leftSon, _left, middle);
+        push(rightSon, middle + 1, _right);
+ 
+        tree [node] = tree [leftSon] + tree [rightSon];
+    }
+    long long rangeQuery (int node, int _left, int _right, int leftUpdate, int rightUpdate)
+    {
+        int middle = (_left + _right) >> 1;
+        int leftSon = node << 1;
+        int rightSon = node << 1 | 1;
+        push(node, _left, _right);
+        push(leftSon, _left, middle);
+        push(rightSon, middle + 1, _right);
+ 
+        if (leftUpdate <= _left and _right <= rightUpdate)
+        {
+            return tree [node];
+        }
+ 
+        long long total = 0;
+        if (leftUpdate <= middle)
+        {
+            total += rangeQuery(leftSon, _left, middle, leftUpdate, rightUpdate);
+        }
+        if (rightUpdate > middle)
+        {
+            total += rangeQuery(rightSon, middle + 1, _right, leftUpdate, rightUpdate);
+        }
+ 
+        push(node, _left, _right);
+        push(leftSon, _left, middle);
+        push(rightSon, middle + 1, _right);
+ 
+        tree [node] = tree [leftSon] + tree [rightSon];
+        return total;
+    }
+ 
+};
+ 
+class HeavyPath
+{
+public:
+    HeavyPath()
+    {
+ 
+    }
+    HeavyPath(int _numberOfNodes, vector <int> *&_graph, vector <int> currentCost)
+    {
+        this -> numberOfChains = 0;
+        this -> numberOfNodes = _numberOfNodes;
+        this -> graph = _graph;
+        this -> cost.resize(currentCost.size());
+        for (int currentIndex = 0; currentIndex < (int)currentCost.size(); ++ currentIndex)
+        {
+            this -> cost [currentIndex] = currentCost[currentIndex];
+        }
+        sub.resize(static_cast<unsigned int>(numberOfNodes + 1), 0);
+        parent.resize(static_cast<unsigned int>(numberOfNodes + 1), 0);
+        levelOfNode.resize(static_cast<unsigned int>(numberOfNodes + 1), 0);
+        positionInChain.resize(static_cast<unsigned int>(numberOfNodes + 1), 0);
+        whichChain.resize(static_cast<unsigned int>(numberOfNodes + 1), 0);
+        chains.emplace_back();
+        depthFirstSearch(root, 0, 1);
+        expectedValue.resize(static_cast<unsigned int>(numberOfNodes + 1), 0);
+        buildExpectedValues(root);
+        segmentTrees.resize(static_cast<unsigned int>(numberOfChains + 1), nullptr);
+        sizeOfChain.resize(static_cast<unsigned int>(numberOfChains + 1), 0);
+        assert(numberOfChains < chains.size());
+        for (int currentIndex = 1; currentIndex <= numberOfChains; ++ currentIndex)
+        {
+            sizeOfChain [currentIndex] = (int)chains[currentIndex].size() - 1;
+            segmentTrees [currentIndex] = new SegmentTree (sizeOfChain [currentIndex]);
+ 
+            for (int currentIndexOfNode = 1; currentIndexOfNode <= sizeOfChain [currentIndex]; ++ currentIndexOfNode)
+            {
+                int whichNode = chains[currentIndex][currentIndexOfNode];
+                segmentTrees[currentIndex] -> UpdateOnPosition(currentIndexOfNode, 1LL * expectedValue [whichNode]);
+            }
+        }
+    }
+    void Update (int node, int newValue)
+    {
+        long long difference = 1LL * newValue - cost [node];
+        cost [node] = 1LL * newValue;
+        updateOnNode(node, difference);
+        if (parent [node])
+        {
+            updateOnPath(parent [node], 2LL * difference);
+        }
+    }
+    long long SolveQuery(int source, int target)
+    {
+        return solveQuery(source, target);
+    }
+private:
+    const int root = 1;
+    int numberOfChains{};
+    vector < vector <int> > chains;
+    vector <int> positionInChain;
+    vector <int> whichChain;
+    vector <int> sizeOfChain;
+    int numberOfNodes;
+    vector <int> *graph;
+    vector <long long> cost;
+    vector <int> sub;
+    vector <int> parent;
+    vector <int> levelOfNode;
+    vector <SegmentTree *> segmentTrees;
+    vector <long long> expectedValue;
+ 
+    void buildExpectedValues (int node)
+    {
+        for (auto &neighbour : graph[node])
+        {
+            buildExpectedValues(neighbour);
+        }
+        expectedValue[node] = cost [node];
+        for (auto &neighbour : graph[node])
+        {
+            expectedValue[node] += expectedValue[neighbour];
+            expectedValue[node] += cost[neighbour];
+        }
+    }
+    void depthFirstSearch(int node, int father, int currentLevel)
+    {
+        sub [node] = 1;
+        parent [node] = father;
+        levelOfNode [node] = currentLevel;
+ 
+        int theHeaviest = -1;
+        int whichIsTheHeaviest = -1;
+        for (auto &neighbour : graph [node])
+        {
+            depthFirstSearch(neighbour, node, currentLevel + 1);
+            sub [node] += sub [neighbour];
+            if (theHeaviest < sub [neighbour])
+            {
+                theHeaviest = sub [neighbour];
+                whichIsTheHeaviest = neighbour;
+            }
+        }
+        if (sub [node] == 1)
+        {
+            numberOfChains += 1;
+            chains.emplace_back();
+            chains[numberOfChains].emplace_back();
+            chains[numberOfChains].push_back(node);
+            positionInChain[node] = 1;
+            whichChain[node] = numberOfChains;
+            return;
+        }
+        assert(whichIsTheHeaviest != -1 and theHeaviest != -1);
+        chains[whichChain[whichIsTheHeaviest]].push_back(node);
+        whichChain[node] = whichChain[whichIsTheHeaviest];
+        positionInChain[node] = (int)chains[whichChain[node]].size() - 1;
+    }
+    void updateOnNode(int node, long long add)
+    {
+        segmentTrees[whichChain[node]] -> UpdateOnRange(positionInChain[node], positionInChain[node], add);
+    }
+    void updateOnPath(int currentNode, long long add)
+    {
+        while (currentNode)
+        {
+            segmentTrees[whichChain[currentNode]] -> UpdateOnRange(positionInChain[currentNode], sizeOfChain[whichChain[currentNode]], add);
+            currentNode = parent [chains[whichChain[currentNode]].back()];
+        }
+    }
+    long long solveQuery(int source, int target)
+    {
+        assert(levelOfNode[source] >= levelOfNode[target]);
+        long long computedResult = 0;
+        while (whichChain[source] != whichChain[target])
+        {
+            computedResult += segmentTrees[whichChain[source]] -> RangeSum(positionInChain[source], sizeOfChain[whichChain[source]]);
+            source = parent [chains[whichChain[source]].back()];;
+        }
+        if (positionInChain[source] < positionInChain[target])
+        {
+            computedResult += segmentTrees[whichChain[source]] -> RangeSum(positionInChain[source], positionInChain[target] - 1);
+        }
+        return computedResult;
+    }
+};
+ 
+int main() {
+    const char InputFile [] =  "taristraine.in";
+    const char OutputFile [] = "taristraine.out";
+    const auto MaxNumberOfNodes = static_cast<const int>(1e5);
+    const auto MaxNumberOfQueries = static_cast<const int>(1e5);
+    const auto MaxCost = static_cast<const int>(1e6);
+    ifstream input (InputFile);
+    ofstream output (OutputFile);
+ 
+    assert(input.is_open());
+    assert(output.is_open());
+ 
+    int numberOfNodes, numberOfQueries;
+    assert(input >> numberOfNodes >> numberOfQueries);
+    assert(isBetween(1, numberOfNodes, MaxNumberOfNodes));
+    assert(isBetween(1, numberOfQueries, MaxNumberOfQueries));
+    auto *graph = new vector <int> [numberOfNodes + 1];
+    vector <int> currentCost (static_cast<unsigned int>(numberOfNodes + 1));
+    for (int currentNode = 2; currentNode <= numberOfNodes; ++ currentNode)
+    {
+        int parent, costOfNode;
+        assert(input >> parent >> costOfNode);
+        assert(isBetween(1, parent, numberOfNodes));
+        assert(isBetween(1, costOfNode, MaxCost));
+        graph[parent].push_back(currentNode);
+        currentCost[currentNode] = costOfNode;
+    }
+    auto *Solver = new HeavyPath(numberOfNodes, graph, currentCost);
+    for (int currentQuery = 1; currentQuery <= numberOfQueries; ++ currentQuery)
+    {
+        int queryType;
+        assert(input >> queryType);
+        assert(isBetween(1, queryType, 2));
+        if (queryType == 1)
+        {
+            int node, cost;
+            assert(input >> node >> cost);
+            assert(isBetween(1, node, numberOfNodes));
+            assert(isBetween(1, cost, MaxCost));
+ 
+            Solver -> Update(node, cost);
+        }
+        else
+        {
+            int source, target;
+            assert(input >> source >> target);
+            assert(isBetween(1, source, numberOfNodes));
+            assert(isBetween(1, target, numberOfNodes));
+            output << Solver -> SolveQuery(source, target) << " 1\n";
+        }
+    }
+    return 0;
+}
