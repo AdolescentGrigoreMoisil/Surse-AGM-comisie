@@ -1,12 +1,12 @@
 /*Patrick Catalin Alexandru Sava
 The University of Manchester
-O (T * N * log (VALMAX))
+O (T * N * log (VALMAX) * log(log(VALMAX)))
 Expected : Accepted*/
- 
+
 #include <bits/stdc++.h>
- 
+
 using namespace std;
- 
+
 vector <int> sieve (int limit)
 {
     // sieve to optimize the computation of prime numbers
@@ -25,12 +25,12 @@ vector <int> sieve (int limit)
     }
     return primes;
 }// sieve
- 
+
 vector < pair <int, int> > factorize (int number, vector <int> &primes)
 {
     // get the factors and exponents for a certain number
     vector < pair <int, int> > factorsAndExponents;
- 
+
     for (auto &primeNumber : primes)
     {
         if (primeNumber * primeNumber > number)
@@ -58,8 +58,8 @@ vector < pair <int, int> > factorize (int number, vector <int> &primes)
     }
     return factorsAndExponents;
 } // factorize
- 
- 
+
+
 bool canChoose (int fixedExponent, vector <int> &exponents)
 {
     // check for a certain exponent for a fixed factor
@@ -75,7 +75,7 @@ bool canChoose (int fixedExponent, vector <int> &exponents)
     }
     return true;
 } // canChoose
- 
+
 vector <int> buildSolution (vector <int> &products, int &firstElement)
 {
     // build the solution
@@ -97,27 +97,27 @@ vector <int> buildSolution (vector <int> &products, int &firstElement)
     }
     return solution;
 }// buildSolution
- 
- 
+
+
 int main() {
     // file streams
     ifstream input ("produse2.in");
     ofstream output ("produse2.out");
- 
+
     // assertions
     assert(input.is_open());
     assert(output.is_open());
- 
+
     // constants
     const auto MaxNumberOfTests = static_cast<const int>(7e3);
     const auto MaxNumberOfElements = static_cast<const int>(3e6);
     const auto ValMax = static_cast<const int>(3e6);
- 
+
     // for assertion
     auto isBetween = [](const int inf, const int number, const int sup) -> bool {
         return inf <= number and number <= sup;
     };
- 
+
     int numberOfTests;
     assert(input >> numberOfTests);
     assert(isBetween(1, numberOfTests, MaxNumberOfTests));
@@ -146,19 +146,21 @@ int main() {
             int factor = factorAndExponent.first; // fixed prime factor
             int exponent = factorAndExponent.second;
             vector <int> exponentForCurrentFactor (static_cast<unsigned int>(numberOfProducts));
+            vector <int> powers;
+            powers.push_back(1);
+            for (int currentPower = 1; 1LL * powers[currentPower - 1] * factor <= ValMax; ++ currentPower)
+                powers.push_back(powers[currentPower - 1] * factor);
             for (int currentIndex = 0; currentIndex < numberOfProducts; ++ currentIndex)
             {
                 int copy = products [currentIndex];
                 int dividingTimes = 0;
-                while (copy % factor == 0)
-                {
-                    copy /= factor;
-                    dividingTimes += 1;
-                }
+                for (int currentBit = 4; currentBit >= 0; -- currentBit)
+                    if ((1 << currentBit) < (int)powers.size() and copy % powers[(1 << currentBit)] == 0)
+                        copy /= powers[(1 << currentBit)], dividingTimes |= (1 << currentBit);
                 // precompute the biggest exponent for the fixed prime factor
                 exponentForCurrentFactor [currentIndex] = dividingTimes;
             }
-            // we will iterate how many exponents respect might be choosed 
+            // we will iterate how many exponents respect might be choosed
             int numberOfGoodExponents = 0;
             int bestExponent;
             for (int iteratedExponent = 0; iteratedExponent <= exponent; ++ iteratedExponent)
@@ -179,8 +181,8 @@ int main() {
             }
             else
             {
-                // multiply the number of ways with the number of 
-                // good exponents for this factor 
+                // multiply the number of ways with the number of
+                // good exponents for this factor
                 numberOfWays *= numberOfGoodExponents;
                 // compute the first number
                 while (bestExponent)
@@ -191,7 +193,7 @@ int main() {
                 }
             }
         }
- 
+
         // once we have the first number we may build a valid solution
         if (answer == 0)
         {
@@ -216,7 +218,7 @@ int main() {
             // whose exponents are 0 in B[1]
             output << 0 << '\n';
         }
- 
+
     }// for
     return 0;
 }// main
